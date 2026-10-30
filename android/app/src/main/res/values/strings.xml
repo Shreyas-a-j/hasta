@@ -1,4 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">HASTA M0</string>
+
+    <string name="permission_title">Camera access is required</string>
+    <string name="permission_body">HASTA tracks your hands on this device. Frames are processed locally and are never uploaded.</string>
+    <string name="permission_allow">Allow camera</string>
+    <string name="permission_denied_body">Camera access was denied. HASTA cannot track hands without it.</string>
+    <string name="permission_open_settings">Open settings</string>
+    <string name="permission_settings_hint">Enable the Camera permission in Android Settings, then return to HASTA.</string>
+
+    <!-- Debug-only benchmark feedback. Not reachable in release builds. -->
+    <string name="benchmark_long_press_label">Start or stop benchmark</string>
+    <string name="benchmark_running">Benchmark running — long-press the status chip to stop</string>
+    <string name="benchmark_saved">Benchmark saved · %1$d frames · %2$s</string>
+    <string name="benchmark_failed">Benchmark failed: %1$s</string>
 </resources>
