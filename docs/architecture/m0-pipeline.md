@@ -10,6 +10,7 @@ CameraX ImageAnalysis
   executor: single dedicated thread
         │
         ├─ frame arrives
+        ├─ every 15th frame: sample central luma → exposure policy
         ├─ if tracker busy → skip + count → close ImageProxy
         ├─ ImageProxy.toBitmap()
         ├─ HandLandmarker.detectAsync(mpImage, rotation, timestamp)
@@ -17,6 +18,8 @@ CameraX ImageAnalysis
                  │
                  ▼ MediaPipe result listener
         HandResultMapper (MediaPipe types → HASTA types)
+                 │
+                 ├─ LandmarkSmoother (image landmarks only)
                  │
                  ├─ StateFlow<CameraUiState> → Compose status + overlay
                  └─ BenchmarkRecorder → latency / interval statistics
@@ -105,13 +108,50 @@ claim that hands are visible.
 | Min hand detection confidence | 0.5 |
 | Min hand presence confidence | 0.5 |
 | Min tracking confidence | 0.5 |
-| Delegate | CPU |
+| Delegate | GPU, automatic CPU fallback |
 | Output | handedness category + score, 21 image landmarks, 21 world landmarks |
 
-These are the documented defaults. M0 does not tune them; tuning requires evidence.
+These are the documented defaults. M0 does not tune confidence thresholds; tuning
+requires evidence. The GPU delegate is attempted first; if task creation fails, the
+tracker logs the failure and creates the same task on CPU. The chosen delegate is
+recorded in every benchmark run. The fallback covers creation only; a later delegate
+failure surfaces as a tracking error rather than an automatic switch.
 
 Tracking confidence is tracker quality, not sign-recognition confidence. M0 performs
 no recognition.
+
+## Precision stages
+
+### Adaptive landmark smoothing
+
+`LandmarkSmoother` applies a per-landmark One Euro filter to image `x` and `y` only.
+Left/right filter state is kept separate, and hands are matched frame-to-frame by
+handedness plus wrist proximity (0.35 in normalized coordinates). A one-frame dropout
+keeps the track for up to 600 ms; a longer gap resets the filter instead of dragging
+the old position. World landmarks, handedness and scores are never rewritten. This is
+a display-quality stage: it runs after mapping and before the UI state is published.
+
+Defaults: `minCutoff = 0.5`, `beta = 0.5`, `dCutoff = 1.0`. Low cutoff at rest
+suppresses shimmer; the speed term raises the cutoff during motion so the skeleton
+does not trail a fast hand.
+
+### Low-light exposure bias
+
+`LumaMeter` samples the central 60% of the Y plane with a coarse stride on every 15th
+frame. `ExposurePolicy` maps average luma to an EV target:
+
+| Luma | Target |
+|---|---|
+| ≤ 40 | +2 EV |
+| ≤ 70 | +1 EV |
+| ≥ 110 | 0 EV |
+| in between | hold current, with 8-luma hysteresis on step-down |
+
+The target is converted to a CameraX compensation index using the device-reported
+step, clamped to the supported range. Updates are applied on the main thread and
+rate-limited to one every 1.5 s. A device that reports no support or a zero step is
+left untouched. This biases auto-exposure; it does not replace it, and it never
+modifies the frame sent to inference.
 
 ## Benchmark definitions
 
@@ -129,6 +169,25 @@ no recognition.
 
 MediaPipe-internal drops are not fully observable. The report states the submitted,
 processed and skipped counts and does not invent a drop count.
+
+## Benchmark export
+
+The recorder is compiled only into the `debug` variant (`src/debug/`). Release builds
+create no recorder, expose no trigger and contain none of the sampling classes.
+
+- Trigger: long-press the status chip; long-press again to stop early.
+- Duration: ten minutes, 1 Hz environmental sampling.
+- Files: app-private `files/benchmark/benchmark-<timestamp>.json` and `.csv`.
+- CSV: per-frame `frame_index,result_elapsed_ms,latency_ms,interval_ms`.
+- JSON: schema `hasta.m0.benchmark/1`, device and app build, camera sizes and target
+  rotation, delegate (`GPU`/`CPU`), smoothing and exposure settings,
+  submitted/processed/skipped/error deltas, effective and recorded FPS,
+  latency/interval percentiles, PSS start/peak/end, battery start/end/peak
+  temperature, thermal start/end/max and a thermal histogram.
+- `endReason` is `duration_complete`, `stopped_by_user` or `pipeline_stopped`. A
+  report must not treat a partial run as a completed ten-minute run.
+
+Percentiles use the nearest-rank definition: rank `ceil(p / 100 * n)`, 1-based.
 
 ## Known constraints
 

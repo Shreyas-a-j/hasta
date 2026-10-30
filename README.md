@@ -71,13 +71,17 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest
 The benchmark is available only in debug builds. Long-press the tracking status
 chip to start a ten-minute run (it stops automatically; long-press again to abort).
 
-Export files are written to the app-specific external directory:
+Export files are written to the app-private files directory
+(`files/benchmark/`), so no storage permission is required:
 
 ```bash
 adb shell run-as com.hasta.app ls files/benchmark
 adb exec-out run-as com.hasta.app cat files/benchmark/<run>.json > m0-benchmark.json
 adb exec-out run-as com.hasta.app cat files/benchmark/<run>.csv > m0-benchmark.csv
 ```
+
+Stopping early, rotating the device or leaving the app also ends a run; the export
+records an `endReason` so a partial run is never presented as a full ten minutes.
 
 See [`docs/architecture/m0-pipeline.md`](docs/architecture/m0-pipeline.md) for the
 measurement definitions and [`docs/tasks/M0.md`](docs/tasks/M0.md) for the device
