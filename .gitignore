@@ -1,0 +1,19 @@
+# Local configuration
+local.properties
+*.iml
+
+# Gradle
+.gradle/
+build/
+captures/
+
+# IDE
+.idea/
+.vscode/
+
+# OS
+.DS_Store
+
+# Benchmark pulls (raw exports stay out of version control); summaries are committed
+android/app/build/outputs/
+benchmark-pulls/
