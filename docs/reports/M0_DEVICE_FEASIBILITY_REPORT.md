@@ -118,6 +118,10 @@ Two earlier attempts on the same build were stopped with the status chip
 (`stopped_by_user`, 196.8 s and 2.8 s) and are excluded from the gate result. The
 `endReason` field is what distinguishes them from the completed run.
 
+The raw export is kept in the repository as
+`docs/reports/evidence/benchmark-20261030-230602.json` and
+`docs/reports/evidence/benchmark-20261030-230602.csv`.
+
 The implementation writes:
 
 - `files/benchmark/benchmark-<timestamp>.csv` — per-frame
