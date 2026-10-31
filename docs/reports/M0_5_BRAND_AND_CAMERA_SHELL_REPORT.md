@@ -1,7 +1,8 @@
 # M0.5 — Brand Theme and Live Sign Coach Camera Shell
 
-Status: **build and automated verification complete; physical-device verification
-NOT VERIFIED.**
+Status: **build, automated verification, physical-device verification and a ten-minute
+benchmark complete.** The benchmark is not like-for-like against the M0 baseline, so
+the performance comparison is partial (section 4.2).
 
 Date: 31 October 2026.
 
@@ -10,7 +11,8 @@ Date: 31 October 2026.
 ## 1. Scope
 
 M0.5 adds the HASTA design system and the Live Sign Coach camera shell on top of the
-unchanged M0 tracking engine.
+M0 tracking engine. The engine is unchanged except for the overlay rotation fix
+recorded in [ADR-0002](../decisions/ADR-0002-rotate-analysis-frame-in-app.md).
 
 Delivered:
 
@@ -97,8 +99,11 @@ states that the activity is recreated while the saved practice window survives.
 
 ### Unchanged
 
-`perception/`, `domain/`, `data/` implementation, the MediaPipe configuration, GPU
+`domain/` and `data/` implementation, the MediaPipe model and confidence settings, GPU
 fallback, smoothing, exposure, benchmark implementation and all M0 tests.
+
+`perception/` was changed by one defect fix: the analysis frame is now rotated in the
+app before inference (ADR-0002). No other perception behaviour changed.
 
 ---
 
@@ -109,11 +114,12 @@ All commands were run from `android/` with
 
 | Command | Result |
 |---|---|
-| `./gradlew :app:testDebugUnitTest` | **BUILD SUCCESSFUL** — 108 tests, 0 failures, 0 errors, 0 skipped |
+| `./gradlew :app:testDebugUnitTest` | **BUILD SUCCESSFUL** — 111 tests, 0 failures, 0 errors, 0 skipped |
 | `./gradlew :app:assembleDebug` | **BUILD SUCCESSFUL** — 0 compiler errors, 0 warnings |
 | `./gradlew :app:assembleRelease` | **BUILD SUCCESSFUL** — unsigned APK produced |
-| `./gradlew :app:assembleDebugAndroidTest` | **BUILD SUCCESSFUL** — 4 instrumented test classes compile |
+| `./gradlew :app:assembleDebugAndroidTest` | **BUILD SUCCESSFUL** — 5 instrumented test classes compile |
 | `./gradlew :app:lintDebug` | **BUILD SUCCESSFUL** — 0 errors, 11 warnings (all dependency/target-SDK advisories) |
+| `./gradlew :app:connectedDebugAndroidTest` | **BUILD SUCCESSFUL** — 30 tests executed on the moto g64 5G, 0 failed |
 
 Unit test coverage added:
 
@@ -124,15 +130,21 @@ Unit test coverage added:
 - `LiveCoachPresenterTest` — every live state, error precedence, practice progress,
   and a guard that no future recognition state is ever emitted.
 - `PracticeStateTest` — window start/advance/stop/again semantics and clamping.
+- `HandResultMapperTest` — the mapper must not rotate or swap the upright image it is
+  given, at any of 0/90/180/270 (regression test for the 180-degree overlay defect).
+- `FrameRotationTest` — degree normalisation, including negative and multi-turn input.
 
-Instrumented tests written and compiling (not executed — see section 4):
+Instrumented tests, executed on the device:
 
 - `LiveCoachStateRenderingTest` — all live states, debug-metric absence.
-- `LiveCoachRotationTest` — portrait margins, landscape right-side placement,
-  runtime rotation.
+- `LiveCoachRotationTest` — portrait margins, landscape right-side top-anchored
+  placement, runtime rotation; viewport forced with `DeviceConfigurationOverride`.
 - `LiveCoachAccessibilityTest` — 48dp target, `stateDescription`, content
   descriptions, font scale 2.0, reduced motion, error semantics.
 - `PermissionScreenTest` — rationale, denial, permanent denial, dark theme, clicks.
+- `FrameRotationInstrumentedTest` — colour-quadrant proof that the frame rotates
+  clockwise, that 90 degrees swaps non-square dimensions, that 180 flips both axes,
+  and that -90 equals 270.
 
 ### Lint warnings accepted
 
@@ -143,38 +155,89 @@ accessibility defect.
 
 ---
 
-## 4. Not verified
+## 4. Device verification
 
-The phone (moto g64 5G, `ZA222MM3L5`, Android 15) was disconnected to free RAM
-before device work. Therefore the following are **NOT VERIFIED**:
+Phone: moto g64 5G (`ZA222MM3L5`), Android 15, 1080 x 2400 physical, density
+override 492 dpi. The instrumented suite and every observation below were made on
+that device; the display was locked with `adb shell cmd window user-rotation lock`.
 
-- `connectedDebugAndroidTest` execution on hardware.
-- On-device camera start, preview orientation and overlay alignment.
-- Mirroring correctness in the live app after the theme change.
-- Rotation behaviour on the actual device across all Live Coach states.
-- Permission grant, denial, permanent denial and Settings round-trip.
-- Background/foreground and camera-resume behaviour.
-- Performance regression against the M0 baseline (8.39 FPS).
-- Battery, thermal and memory behaviour with the new UI.
+| Check | Evidence | Result |
+|---|---|---|
+| Instrumented suite on hardware | `:app:connectedDebugAndroidTest` — 30 tests, 0 failed | **PASS** |
+| Camera start and permission screen | Fresh install with camera revoked showed the branded rationale; granting started the preview | **PASS** |
+| Live Coach portrait layout | Bottom panel inside the safe area, full primary action visible | **PASS** |
+| Live Coach landscape layout | Right-edge panel, top-anchored below the top bar, full primary action visible | **PASS** |
+| Skeleton alignment, portrait | Single skeleton overlays the real right hand: wrist at the bracelet, fingertips and thumb on the actual fingers | **PASS** |
+| Skeleton alignment, landscape | Both skeletons overlay the corresponding real hands | **PASS** |
+| Mirroring and handedness | Display-only mirror; the subject's right hand is drawn in Raspberry | **PASS** |
+| Rotation mid-window | Practice window survived a portrait-to-landscape rotation and completed honestly | **PASS** |
+| Overlay rotation across orientation | Analysis metadata `rot=270` upright `480x640` in portrait and `rot=180` upright `640x480` in landscape; landmarks followed the hand in both | **PASS** |
 
-No device, FPS, latency, memory, battery or thermal figure is claimed in this report.
+### 4.1 Overlay rotation defect found on device, and fixed
 
-### Device protocol when the phone is reconnected
+The first device pass exposed a real defect: the skeleton was rotated 180 degrees
+against the hand. A debug probe measured the cause. With rotation metadata `180`, a
+right hand held fingers-up returned `wrist=(0.385,0.300)` and
+`midtip=(0.401,0.749)` — the fingertip below the wrist. The MediaPipe Hand
+Landmarker was not applying `ImageProcessingOptions.setRotationDegrees`, so the
+landmarks stayed in the raw sensor frame while the overlay assumed an upright one.
 
-1. `adb install -r android/app/build/outputs/apk/debug/app-debug.apk`.
-2. `./gradlew :app:connectedDebugAndroidTest`.
-3. Walk every Live Coach state: starting, ready, no hands, one hand, two hands,
-   practising, hands lost mid-window, window complete, tracking paused, camera
-   unavailable.
-4. Rotate mid-window in each of ready, practising and complete; confirm the timer
-   continues and the panel moves to the right edge in landscape.
-5. Confirm the skeleton matches the hand, that the left/right colours are correct
-   and that mirroring is display-only.
-6. Revoke the camera permission, deny once, deny permanently, then grant through
-   Settings; confirm each recovery path.
-7. Background and resume; confirm the preview and tracking recover.
-8. Run the ten-minute debug benchmark and compare against the M0 baseline using the
-   same analysis resolution and delegate.
+The fix rotates the analysis bitmap in the app before inference and passes no
+rotation to the task; see
+[ADR-0002](../decisions/ADR-0002-rotate-analysis-frame-in-app.md). This is a change
+to `perception/`, which the earlier draft of this report described as untouched.
+
+### 4.2 Ten-minute benchmark
+
+Run `benchmark-20261031-091213`, started 09:12:12 and completed 09:22:13 IST on the
+same phone, using the debug build that passed the checks above.
+`endReason` is `duration_complete`; duration 601.0 s.
+
+| Metric | Value |
+|---|---|
+| `endReason` | `duration_complete` |
+| Duration | 601.0 s |
+| Submitted / processed / skipped / errors | 17,613 / 4,688 / 12,926 / 0 |
+| Recorded frames | 4,680 |
+| Effective FPS | 7.80 |
+| Frame interval p50 / p95 / p99 | 128 / 177 / 205 ms (min 50, max 339, mean 128.2) |
+| Latency p50 / p95 / p99 | 226 / 277 / 291 ms (min 152, max 342, mean 229.8) |
+| PSS start / peak / end | 258,819 / 349,262 / 294,358 KB (578 samples) |
+| Battery / charging | 62% → 60% / charging throughout |
+| Battery temperature | 34 → 36 °C, peak 36 °C |
+| Thermal | none at start, end and peak |
+| Analysis resolution | 640×480 (1.3333) |
+| Preview resolution | 1440×1088 (1.3235) |
+| Target rotation | 0° (portrait); analysis rotation 270° on every frame |
+| Delegate | `GPU` |
+| Smoothing / exposure | `one_euro` / `adaptive_luma` |
+
+**Comparison with M0.** The M0 baseline (`benchmark-20261030-230602`) processed
+8.39 FPS; this run processed 7.80 FPS, about 7% fewer frames per second. The two
+runs are **not like-for-like**, and the difference is not reported as a regression
+verdict:
+
+- The M0 build did no in-app rotation at all; this run rotated every analysis frame
+  by 270° (portrait), which is exactly the work ADR-0002 added. The baseline also
+  ran at target rotation 90° (landscape), so the device orientation differed too.
+- The runs offered different frame counts (14,925 vs 17,613 submitted, 18% more
+  here), so this run's stream was not starving the analyzer.
+- Each condition was measured once; run-to-run variance is unknown.
+
+What the numbers support: the pipeline stayed healthy for the full ten minutes
+(0 errors, no thermal throttling, memory returned below its peak), and the added
+rotation did not degrade throughput by a large factor. What they do not support is
+the claim that there is **no** performance regression. A like-for-like repeat
+(baseline orientation, more than one run each) is the outstanding follow-up. One
+landscape attempt was started at 09:15 on the same build, but the phone disconnected
+before the run could export, so it produced no result and is not reported as one.
+
+### 4.3 Still not verified
+
+- TalkBack read-through of the live camera screen (labels and semantics are asserted
+  by tests, not by a screen-reader pass).
+- Behaviour beyond a ten-minute session (multi-hour battery, thermal and memory).
+- A like-for-like performance comparison against the M0 baseline (section 4.2).
 
 ---
 
@@ -188,20 +251,26 @@ No device, FPS, latency, memory, battery or thermal figure is claimed in this re
 | Ready, tracking, no-hand, permission, error states | Met — presenter + instrumented tests |
 | No debug clutter on the learner screen | Met — debug metrics never rendered; test guards it |
 | Accessibility pass | Met in code and tests; device TalkBack pass NOT VERIFIED |
-| Rotation stays clean | Met in layout and `LiveCoachRotationTest`; device NOT VERIFIED |
-| M0 engine preserved | Met — `perception/`, `domain/`, `data/` untouched |
-| No performance regression | NOT VERIFIED — requires device benchmark |
+| Rotation stays clean | Met on device in portrait and landscape, including a mid-window rotation |
+| M0 engine preserved | Met apart from the documented ADR-0002 rotation fix; `domain/` and `data/` untouched |
+| No performance regression | Measured 7.80 FPS vs the 8.39 baseline, but in a different orientation; no clean verdict (section 4.2) |
 
 ---
 
 ## 6. Risks and follow-ups
 
-- The instrumented suite has never run on hardware. Layout assertions may need small
-  tolerance adjustments on the real screen size.
+- The instrumented suite now runs on hardware (30/30). Layout assertions use a forced
+  viewport, so they are device-size independent, but they do not replace a visual
+  check — the clamped landscape panel was found visually.
 - The practice window is intentionally UI-only. Later milestones must replace it
   rather than extend it into an assessment.
 - The launcher icon is a first mark, not a final brand asset.
 - Dependency upgrades and `targetSdk` changes are deliberately deferred.
+- Overlay gates must record landmark coordinates, not just a screenshot: the M0
+  "aligned" verdict was visually wrong for a whole milestone.
+- Performance should be measured in the same orientation for both builds before any
+  regression claim. The rotation fix does per-frame work that the M0 benchmark did
+  not, so the comparison in section 4.2 is indicative only.
 
 ---
 
@@ -220,4 +289,13 @@ With a device attached:
 
 ```bash
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:connectedDebugAndroidTest
+```
+
+Benchmark (debug build only, long-press the status pill to start or stop):
+
+```bash
+adb shell cmd window user-rotation lock 0     # record the orientation you use
+adb shell am start -n com.hasta.app/.MainActivity
+adb shell input motionevent DOWN 810 220 && sleep 2 && adb shell input motionevent UP 810 220
+adb exec-out run-as com.hasta.app cat files/benchmark/<run>.json > run.json
 ```
