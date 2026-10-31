@@ -17,10 +17,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
 /**
- * Owns the camera session for the screen and exposes immutable UI state.
+ * Owns the camera session for the screen and exposes two separate streams:
  *
- * Results arrive on MediaPipe's callback thread; Compose observes the StateFlow.
- * [benchmark] is null in release builds, so no benchmark path is reachable there.
+ * - [frameState] changes on every analysed frame and is only read by the overlay.
+ * - [tracking] changes only when the learner-visible tracking state changes.
+ *
+ * The M0 camera engine, MediaPipe configuration and benchmark path are untouched.
+ * [benchmark] is null in release builds, so the debug path is unreachable there.
  */
 class CameraController(
     private val context: Context,
@@ -28,8 +31,11 @@ class CameraController(
     private val previewView: PreviewView,
     val benchmark: BenchmarkRecorder? = null,
 ) {
-    private val _state = MutableStateFlow(CameraUiState())
-    val state: StateFlow<CameraUiState> = _state.asStateFlow()
+    private val _frameState = MutableStateFlow(FrameUiState())
+    val frameState: StateFlow<FrameUiState> = _frameState.asStateFlow()
+
+    private val _tracking = MutableStateFlow<TrackingState>(TrackingState.Initializing)
+    val tracking: StateFlow<TrackingState> = _tracking.asStateFlow()
 
     val stats = PipelineStats()
 
@@ -37,7 +43,7 @@ class CameraController(
 
     fun start() {
         if (session != null) return
-        _state.value = CameraUiState(tracking = TrackingState.Initializing)
+        resetState()
 
         session = CameraSession(
             context = context,
@@ -55,12 +61,8 @@ class CameraController(
             onTrackingError = ::publishTrackingError,
             onCameraError = ::publishCameraError,
             onCameraReady = {
-                _state.update { current ->
-                    if (current.tracking == TrackingState.Initializing) {
-                        current.copy(tracking = TrackingState.CameraReady)
-                    } else {
-                        current
-                    }
+                if (_tracking.value == TrackingState.Initializing) {
+                    _tracking.value = TrackingState.CameraReady
                 }
             },
         ).also { it.start() }
@@ -70,7 +72,13 @@ class CameraController(
         benchmark?.onPipelineStopped()
         session?.stop()
         session = null
-        _state.value = CameraUiState(tracking = TrackingState.Initializing)
+        resetState()
+    }
+
+    /** Restarts the existing camera session after a recoverable error. */
+    fun restart() {
+        stop()
+        start()
     }
 
     fun currentCameraInfo(): CameraInfo? = session?.currentCameraInfo()
@@ -102,28 +110,35 @@ class CameraController(
         )
     }
 
+    private fun resetState() {
+        _frameState.value = FrameUiState()
+        _tracking.value = TrackingState.Initializing
+    }
+
     private fun publishFrame(frame: HandFrame) {
-        _state.value = CameraUiState(
-            tracking = TrackingState.fromHandCount(frame.hands.size),
+        _frameState.value = FrameUiState(
             hands = frame.hands,
             imageWidth = frame.imageWidth,
             imageHeight = frame.imageHeight,
         )
+        _tracking.value = TrackingState.fromHandCount(frame.hands.size)
     }
 
     private fun publishTrackingError(message: String) {
-        _state.value = _state.value.copy(
-            tracking = TrackingState.TrackingError,
-            hands = emptyList(),
-            message = message,
-        )
+        _frameState.update { it.copy(hands = emptyList()) }
+        _tracking.value = TrackingState.TrackingError
+        // The message is retained by the controller for diagnostics only. It is
+        // never rendered on the learner screen.
+        lastErrorMessage = message
     }
 
     private fun publishCameraError(message: String) {
-        _state.value = _state.value.copy(
-            tracking = TrackingState.CameraUnavailable,
-            hands = emptyList(),
-            message = message,
-        )
+        _frameState.update { it.copy(hands = emptyList()) }
+        _tracking.value = TrackingState.CameraUnavailable
+        lastErrorMessage = message
     }
+
+    /** Diagnostics-only; the UI deliberately never displays this. */
+    var lastErrorMessage: String? = null
+        private set
 }

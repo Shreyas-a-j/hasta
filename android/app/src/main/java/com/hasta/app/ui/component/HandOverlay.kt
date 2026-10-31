@@ -9,10 +9,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.hasta.app.R
 import com.hasta.app.domain.model.HandObservation
 import com.hasta.app.domain.model.Handedness
 import com.hasta.app.domain.tracking.HandTopology
 import com.hasta.app.perception.overlay.OverlayTransform
+import com.hasta.app.ui.theme.HastaColors
+import com.hasta.app.ui.theme.HastaTheme
 
 /**
  * Draws the 21-point hand skeleton for every detected hand.
@@ -28,11 +32,14 @@ fun HandOverlay(
     imageHeight: Int,
     modifier: Modifier = Modifier,
 ) {
-    val description = when (hands.size) {
-        0 -> "Hand skeleton overlay, no hands"
-        1 -> "Hand skeleton overlay, one hand"
-        else -> "Hand skeleton overlay, two hands"
-    }
+    val description = stringResource(
+        when (hands.size) {
+            0 -> R.string.a11y_overlay_no_hands
+            1 -> R.string.a11y_overlay_one_hand
+            else -> R.string.a11y_overlay_two_hands
+        },
+    )
+    val colors = HastaTheme.colors
 
     Canvas(
         modifier = modifier.semantics { contentDescription = description },
@@ -52,7 +59,7 @@ fun HandOverlay(
                 val mapped = transform.mapNormalized(landmark.x, landmark.y)
                 Offset(mapped.x, mapped.y)
             }
-            val color = handColor(hand.handedness)
+            val color = handColor(hand.handedness, colors)
 
             HandTopology.connections.forEach { (start, end) ->
                 val first = points.getOrNull(start) ?: return@forEach
@@ -89,8 +96,8 @@ fun HandOverlay(
     }
 }
 
-private fun handColor(handedness: Handedness): Color = when (handedness) {
-    Handedness.LEFT -> Color(0xFFDFF1FD)
-    Handedness.RIGHT -> Color(0xFFC01D5A)
-    Handedness.UNKNOWN -> Color(0xFFFFFFFF)
+private fun handColor(handedness: Handedness, colors: HastaColors): Color = when (handedness) {
+    Handedness.LEFT -> colors.skeletonLeft
+    Handedness.RIGHT -> colors.skeletonRight
+    Handedness.UNKNOWN -> colors.skeletonUnknown
 }

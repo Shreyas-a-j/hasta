@@ -1,15 +1,15 @@
 package com.hasta.app.ui
 
+import androidx.compose.runtime.Immutable
 import com.hasta.app.domain.model.HandObservation
-import com.hasta.app.domain.tracking.TrackingState
 
 /**
- * Minimal immutable UI state. Only what the screen draws.
+ * High-frequency frame state. Only the preview/overlay subtree collects this, so
+ * landmark updates do not recompose the coach panel.
  */
-data class CameraUiState(
-    val tracking: TrackingState = TrackingState.Initializing,
+@Immutable
+data class FrameUiState(
     val hands: List<HandObservation> = emptyList(),
     val imageWidth: Int = 0,
     val imageHeight: Int = 0,
-    val message: String? = null,
 )

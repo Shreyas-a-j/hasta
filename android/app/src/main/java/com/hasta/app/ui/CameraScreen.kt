@@ -1,58 +1,57 @@
 package com.hasta.app.ui
 
+import android.Manifest
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.listSaver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.hasta.app.R
 import com.hasta.app.data.benchmark.BenchmarkRecorder
 import com.hasta.app.data.benchmark.BenchmarkState
 import com.hasta.app.ui.component.HandOverlay
-import com.hasta.app.ui.component.TrackingStatusChip
 import com.hasta.app.ui.permission.CameraPermissionStatus
 import com.hasta.app.ui.permission.PermissionStatusReader
+import com.hasta.app.ui.theme.HastaCameraTheme
+import com.hasta.app.ui.theme.HastaRadius
+import com.hasta.app.ui.theme.HastaTheme
+import kotlinx.coroutines.delay
 
 /**
  * Hosts the camera preview or the permission recovery UI.
  *
- * The permission state is derived from the platform on every resume rather than
- * cached in a one-shot callback, so a user returning from Settings is handled.
+ * The permission state is re-read from the platform on every resume, so a grant
+ * made through Android Settings is picked up without restarting the app.
  */
 @Composable
 fun CameraScreen(
@@ -62,7 +61,7 @@ fun CameraScreen(
     val context = LocalContext.current
     var hasRequested by rememberSaveable { mutableStateOf(false) }
     var status by remember {
-        mutableStateOf(PermissionStatusReader.read(context, hasRequested = false))
+        mutableStateOf(PermissionStatusReader.read(context, hasRequested = hasRequested))
     }
 
     val launcher = rememberLauncherForActivityResult(
@@ -73,43 +72,52 @@ fun CameraScreen(
     }
 
     LifecycleEventEffect(Lifecycle.Event.ON_RESUME) {
-        status = PermissionStatusReader.read(context, hasRequested)
+        status = PermissionStatusReader.read(context, hasRequested = hasRequested)
+    }
+
+    val openSettings: () -> Unit = {
+        context.startActivity(
+            Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null),
+            ),
+        )
     }
 
     when (status) {
-        CameraPermissionStatus.GRANTED -> CameraContent(
-            modifier = modifier,
-            benchmark = benchmark,
-        )
+        CameraPermissionStatus.GRANTED -> HastaCameraTheme {
+            SystemBarAppearance(lightIcons = false)
+            CameraContent(
+                modifier = modifier,
+                benchmark = benchmark,
+            )
+        }
 
         CameraPermissionStatus.NOT_REQUESTED,
         CameraPermissionStatus.DENIED,
-        -> PermissionRequired(
-            modifier = modifier,
-            title = stringResource(R.string.permission_title),
-            body = if (status == CameraPermissionStatus.DENIED) {
-                stringResource(R.string.permission_denied_body)
-            } else {
-                stringResource(R.string.permission_body)
-            },
-            actionLabel = stringResource(R.string.permission_allow),
-            onAction = { launcher.launch(android.Manifest.permission.CAMERA) },
-        )
+        -> {
+            SystemBarAppearance(lightIcons = !HastaTheme.colors.isDark)
+            PermissionScreen(
+                kind = if (status == CameraPermissionStatus.NOT_REQUESTED) {
+                    PermissionScreenKind.Rationale
+                } else {
+                    PermissionScreenKind.Denied
+                },
+                onAllow = { launcher.launch(Manifest.permission.CAMERA) },
+                onOpenSettings = openSettings,
+                modifier = modifier,
+            )
+        }
 
-        CameraPermissionStatus.PERMANENTLY_DENIED -> PermissionRequired(
-            modifier = modifier,
-            title = stringResource(R.string.permission_title),
-            body = stringResource(R.string.permission_settings_hint),
-            actionLabel = stringResource(R.string.permission_open_settings),
-            onAction = {
-                context.startActivity(
-                    Intent(
-                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                        Uri.fromParts("package", context.packageName, null),
-                    ),
-                )
-            },
-        )
+        CameraPermissionStatus.PERMANENTLY_DENIED -> {
+            SystemBarAppearance(lightIcons = !HastaTheme.colors.isDark)
+            PermissionScreen(
+                kind = PermissionScreenKind.PermanentlyDenied,
+                onAllow = { launcher.launch(Manifest.permission.CAMERA) },
+                onOpenSettings = openSettings,
+                modifier = modifier,
+            )
+        }
     }
 }
 
@@ -135,11 +143,21 @@ private fun CameraContent(
             benchmark = benchmark,
         )
     }
-    val state by controller.state.collectAsStateWithLifecycle()
-    val onLongClick: (() -> Unit)? = if (benchmark == null) {
-        null
-    } else {
-        ({ controller.toggleBenchmark() })
+    val tracking by controller.tracking.collectAsStateWithLifecycle()
+    val reducedMotion = HastaTheme.motion.reduced
+
+    var practice by rememberSaveable(stateSaver = PracticeSaver) {
+        mutableStateOf(PracticeUiState())
+    }
+
+    LaunchedEffect(practice.phase, reducedMotion) {
+        if (practice.phase == PracticePhase.Running) {
+            val tick = if (reducedMotion) 1_000L else 100L
+            while (true) {
+                delay(tick)
+                practice = practice.advance(tick)
+            }
+        }
     }
 
     LifecycleStartEffect(controller) {
@@ -147,30 +165,42 @@ private fun CameraContent(
         onStopOrDispose { controller.stop() }
     }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Color.Black),
-    ) {
-        AndroidView(
-            factory = { previewView },
-            modifier = Modifier.fillMaxSize(),
-        )
+    val onAction: (CoachAction) -> Unit = { action ->
+        when (action) {
+            CoachAction.StartPractice -> practice = practice.start()
+            CoachAction.StopPractice -> practice = practice.stop()
+            CoachAction.PractiseAgain -> practice = practice.again()
+            CoachAction.RetryTracking,
+            CoachAction.RetryCamera,
+            -> {
+                practice = practice.stop()
+                controller.restart()
+            }
 
-        HandOverlay(
-            hands = state.hands,
-            imageWidth = state.imageWidth,
-            imageHeight = state.imageHeight,
-            modifier = Modifier.fillMaxSize(),
-        )
+            CoachAction.AllowCamera,
+            CoachAction.OpenSettings,
+            -> Unit
+        }
+    }
 
-        TrackingStatusChip(
-            state = state,
-            onLongClick = onLongClick,
-            modifier = Modifier
-                .align(Alignment.TopCenter)
-                .statusBarsPadding()
-                .padding(top = 12.dp),
+    val onLongClick: (() -> Unit)? = if (benchmark == null) {
+        null
+    } else {
+        ({ controller.toggleBenchmark() })
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        LiveCoachScreen(
+            state = LiveCoachUiState(tracking = tracking, practice = practice),
+            onAction = onAction,
+            stage = {
+                CameraStage(
+                    controller = controller,
+                    previewView = previewView,
+                )
+            },
+            modifier = modifier,
+            debugOnLongClick = onLongClick,
         )
 
         if (benchmark != null) {
@@ -178,13 +208,55 @@ private fun CameraContent(
             BenchmarkBanner(
                 state = benchmarkState,
                 modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(horizontal = 24.dp, vertical = 24.dp),
+                    .align(Alignment.TopCenter)
+                    .statusBarsPadding()
+                    .padding(top = 72.dp, start = 16.dp, end = 16.dp),
             )
         }
     }
 }
+
+/**
+ * Owns the high-frequency frame collector. Keeping it in its own composable means
+ * landmark updates recompose the preview/overlay, not the coach panel.
+ */
+@Composable
+private fun CameraStage(
+    controller: CameraController,
+    previewView: PreviewView,
+    modifier: Modifier = Modifier,
+) {
+    val frame by controller.frameState.collectAsStateWithLifecycle()
+
+    Box(modifier = modifier.fillMaxSize()) {
+        val stageDescription = stringResource(R.string.a11y_camera_stage)
+        AndroidView(
+            factory = { previewView },
+            modifier = Modifier
+                .fillMaxSize()
+                .semantics { contentDescription = stageDescription },
+        )
+        HandOverlay(
+            hands = frame.hands,
+            imageWidth = frame.imageWidth,
+            imageHeight = frame.imageHeight,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
+}
+
+private val PracticeSaver = listSaver<PracticeUiState, Any>(
+    save = {
+        listOf(it.phase.name, it.elapsedMillis, it.windowMillis)
+    },
+    restore = {
+        PracticeUiState(
+            phase = PracticePhase.valueOf(it[0] as String),
+            windowMillis = it[2] as Long,
+            elapsedMillis = it[1] as Long,
+        )
+    },
+)
 
 /** Debug-only feedback. Never composed in release because no recorder exists there. */
 @Composable
@@ -206,57 +278,15 @@ private fun BenchmarkBanner(
 
     Surface(
         modifier = modifier,
-        color = Color.Black.copy(alpha = 0.72f),
-        shape = RoundedCornerShape(12.dp),
+        color = HastaTheme.colors.cameraPanel,
+        shape = MaterialTheme.shapes.medium,
     ) {
         Text(
             text = text,
             style = MaterialTheme.typography.labelMedium,
-            color = Color(0xFFF4F1F6),
+            color = HastaTheme.colors.cameraText,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
         )
-    }
-}
-
-@Composable
-private fun PermissionRequired(
-    title: String,
-    body: String,
-    actionLabel: String,
-    onAction: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(horizontal = 32.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            text = body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier
-                .padding(top = 12.dp)
-                .widthIn(max = 360.dp),
-        )
-        Button(
-            onClick = onAction,
-            modifier = Modifier
-                .padding(top = 28.dp)
-                .fillMaxWidth()
-                .widthIn(max = 320.dp),
-        ) {
-            Text(text = actionLabel)
-        }
     }
 }

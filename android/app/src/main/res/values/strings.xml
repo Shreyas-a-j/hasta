@@ -1,17 +1,121 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <string name="app_name">HASTA M0</string>
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <string name="app_name">HASTA</string>
+    <string name="brand_name">HASTA</string>
+    <string name="brand_tagline">Learn the language of hands.</string>
+    <string name="live_coach_subtitle">Live Sign Coach</string>
+    <string name="brand_live_coach_content_description">HASTA, Live Sign Coach</string>
+    <string name="brand_tagline_content_description">HASTA, Learn the language of hands</string>
 
-    <string name="permission_title">Camera access is required</string>
-    <string name="permission_body">HASTA tracks your hands on this device. Frames are processed locally and are never uploaded.</string>
-    <string name="permission_allow">Allow camera</string>
-    <string name="permission_denied_body">Camera access was denied. HASTA cannot track hands without it.</string>
+    <!-- Tracking status. Every status is text plus a glyph, never colour alone. -->
+    <string name="status_starting_camera">Starting camera</string>
+    <string name="status_camera_ready">Camera ready</string>
+    <string name="status_no_hands">No hands in view</string>
+    <string name="status_one_hand">1 hand visible</string>
+    <string name="status_two_hands">Both hands visible</string>
+    <string name="status_practising">Practising</string>
+    <string name="status_hands_out_of_view">Hands out of view</string>
+    <string name="status_window_complete">Window complete</string>
+    <string name="status_tracking_paused">Tracking paused</string>
+    <string name="status_camera_unavailable">Camera unavailable</string>
+    <string name="status_permission_required">Camera permission required</string>
+
+    <!-- Live Coach panel -->
+    <string name="coach_ready_title">Ready when you are</string>
+    <string name="coach_ready_body">Bring both hands into view, about an arm\'s length from the phone.</string>
+    <string name="coach_ready_footnote">M0.5 tracks hands only. Sign recognition is not part of this build.</string>
+
+    <string name="coach_no_hands_title">Bring your hands into view</string>
+    <string name="coach_no_hands_body">Hold your hands inside the frame. Keep them relaxed and well lit.</string>
+
+    <string name="coach_one_hand_title">One hand visible</string>
+    <string name="coach_one_hand_body">Move your other hand into view if you need it. You can start with one hand.</string>
+
+    <string name="coach_two_hands_title">Both hands visible</string>
+    <string name="coach_two_hands_body">You are in frame. Start when you are ready.</string>
+
+    <string name="coach_starting_title">Starting camera</string>
+    <string name="coach_starting_body">Warming up the front camera.</string>
+
+    <string name="coach_practising_title">Practising…</string>
+    <string name="coach_practising_body">Stay in frame. Keep your hands relaxed.</string>
+    <string name="coach_practising_body_no_hands">Bring your hands back into view. The window keeps running.</string>
+    <string name="coach_practising_footnote">Nothing is saved. This window only checks that tracking stays stable.</string>
+
+    <string name="coach_complete_title">Practice window complete</string>
+    <string name="coach_complete_body">Your hands stayed in view for the window. Sign feedback arrives in a later milestone.</string>
+    <string name="coach_complete_footnote">No sign was recognised or saved.</string>
+
+    <string name="coach_tracking_paused_title">Hand tracking paused</string>
+    <string name="coach_tracking_paused_body">The tracker stopped receiving frames. Start the camera again to continue.</string>
+
+    <string name="coach_camera_unavailable_title">Camera could not start</string>
+    <string name="coach_camera_unavailable_body">Close any other camera app, then try again. The camera is only used on this device.</string>
+
+    <string name="coach_permission_title">Camera access is needed</string>
+    <string name="coach_permission_body">Live Sign Coach needs the camera to see your hands.</string>
+
+    <string name="hand_visibility_none">No hands in view</string>
+    <string name="hand_visibility_one">1 of 2 hands</string>
+    <string name="hand_visibility_two">2 of 2 hands</string>
+    <string name="hand_visibility_content_description">Hand visibility: %1$s</string>
+
+    <string name="practice_time_format">0:%1$02d</string>
+    <string name="practice_progress_label">Practice window progress</string>
+
+    <!-- Actions -->
+    <string name="action_start_practice">Start practice</string>
+    <string name="action_stop_practice">Stop practice</string>
+    <string name="action_practise_again">Practise again</string>
+    <string name="action_retry_tracking">Try tracking again</string>
+    <string name="action_retry_camera">Try again</string>
+    <string name="action_allow_camera">Allow camera</string>
+    <string name="action_open_settings">Open settings</string>
+
+    <!-- Accessibility descriptions for controls -->
+    <string name="a11y_start_practice">Start a five second practice window</string>
+    <string name="a11y_stop_practice">Stop the practice window</string>
+    <string name="a11y_retry_tracking">Try restarting hand tracking</string>
+    <string name="a11y_retry_camera">Try starting the camera again</string>
+    <string name="a11y_allow_camera">Allow camera access</string>
+    <string name="a11y_open_settings">Open Android settings for HASTA</string>
+    <string name="a11y_camera_stage">Camera preview with hand tracking overlay</string>
+    <string name="a11y_overlay_no_hands">Hand skeleton overlay, no hands</string>
+    <string name="a11y_overlay_one_hand">Hand skeleton overlay, one hand</string>
+    <string name="a11y_overlay_two_hands">Hand skeleton overlay, two hands</string>
+
+    <!-- Permission and camera recovery -->
+    <string name="permission_title">A camera for your hands</string>
+    <string name="permission_body">HASTA uses the front camera only while Live Sign Coach is open. Nothing is recorded or uploaded.</string>
+    <string name="permission_denied_title">Camera access is needed</string>
+    <string name="permission_denied_body">Live Sign Coach needs the camera to see your hands. Frames are processed on this device and never uploaded.</string>
+    <string name="permission_permanently_denied_title">Camera access is off</string>
+    <string name="permission_settings_hint">Enable Camera in Android Settings to use Live Sign Coach. You can turn it off again at any time.</string>
     <string name="permission_open_settings">Open settings</string>
-    <string name="permission_settings_hint">Enable the Camera permission in Android Settings, then return to HASTA.</string>
+    <string name="permission_privacy_title">On-device only</string>
+    <string name="permission_privacy_body">Frames stay on this phone. No account, no network, no saved video.</string>
 
     <!-- Debug-only benchmark feedback. Not reachable in release builds. -->
     <string name="benchmark_long_press_label">Start or stop benchmark</string>
     <string name="benchmark_running">Benchmark running — long-press the status chip to stop</string>
-    <string name="benchmark_saved">Benchmark saved · %1$d frames · %2$s</string>
+    <string name="benchmark_saved" tools:ignore="PluralsCandidate">Benchmark saved · %1$d frames · %2$s</string>
     <string name="benchmark_failed">Benchmark failed: %1$s</string>
+
+    <!-- Design previews only. These strings are never emitted by the live presenter. -->
+    <string name="preview_badge">Preview only — not live</string>
+    <string name="future_evaluating_title">Checking your attempt</string>
+    <string name="future_evaluating_body">This is a design preview of a future evaluation state. Nothing is being evaluated in this build.</string>
+    <string name="future_recognized_title">Sign recognised</string>
+    <string name="future_recognized_body">Preview data only. Recognition is not available in M0.5.</string>
+    <string name="future_feedback_title">One thing to try</string>
+    <string name="future_feedback_body">Preview of a future feedback panel. HASTA does not correct signs in this build.</string>
+    <string name="future_low_confidence_title">We could not read that attempt</string>
+    <string name="future_low_confidence_body">Preview of a neutral retry state. No confidence score is measured in this build.</string>
+
+    <!-- Reusable lesson card preview data. No lesson engine is implemented. -->
+    <string name="lesson_preview_title">Practice greetings</string>
+    <string name="lesson_preview_subtitle">Beginner path · Lesson 3</string>
+    <string name="lesson_preview_level">Beginner</string>
+    <string name="lesson_preview_duration">6 min</string>
+    <string name="lesson_preview_progress">40%% complete</string>
 </resources>
