@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.hasta.app.domain.tracking.TrackingState
@@ -57,21 +58,23 @@ class LiveCoachStateRenderingTest {
         show(LiveCoachUiState(tracking = TrackingState.OneHand))
 
         compose.onNodeWithText("One hand visible").assertIsDisplayed()
-        compose.onNodeWithText("1 of 2 hands").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Hand visibility: 1 of 2 hands").assertIsDisplayed()
     }
 
     @Test
     fun twoHandsStateConfirmsFraming() {
         show(LiveCoachUiState(tracking = TrackingState.TwoHands))
 
-        compose.onNodeWithText("2 of 2 hands").assertIsDisplayed()
+        compose.onNodeWithContentDescription("Hand visibility: 2 of 2 hands").assertIsDisplayed()
     }
 
     @Test
     fun startingStateDoesNotOfferAnActionThatCannotWork() {
         show(LiveCoachUiState(tracking = TrackingState.Initializing))
 
-        compose.onNodeWithText("Starting camera").assertIsDisplayed()
+        // "Starting camera" appears in both the status pill and the panel, so the
+        // unique panel body identifies the state here.
+        compose.onNodeWithText("Warming up the front camera.").assertIsDisplayed()
         compose.onNodeWithText("Start practice").assertDoesNotExist()
     }
 

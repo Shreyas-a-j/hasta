@@ -295,8 +295,11 @@ advances (at 1s granularity instead of 100ms) so the window completes honestly.
 - Order: preview badge (previews only) → hand visibility → title → body →
   progress/time → footnote → primary action.
 - The title is marked as a heading for screen readers.
-- Maximum height is 56% of the viewport in portrait and the viewport minus the top
-  bar in landscape.
+- Maximum height is 56% of the safe drawing area in portrait, and the safe drawing area
+  minus the top bar's full footprint (bar height plus its vertical padding) in
+  landscape. The panel is top-anchored in landscape, so a tall state grows downward
+  instead of being vertically centred and clipped. Height is always measured from the
+  inset box that actually hosts the panel, never from the raw window.
 - The panel never shows raw coordinates, FPS, confidence, latency or MediaPipe
   internals.
 
@@ -396,7 +399,9 @@ Landscape:
 
 - Top bar is compact and start-aligned so the status does not collide with the panel.
 - Framing guide shifts left of centre to keep the signing area visible.
-- Feedback panel moves to the **right edge**, below the top bar, capped at 320dp wide.
+- Feedback panel moves to the **right edge**, top-anchored below the top bar, capped at
+  320dp wide. Its height budget is the safe area minus the top bar footprint, so the
+  primary action is never clipped at the bottom edge.
 - The panel never covers the vertical centre of the preview.
 
 Both:

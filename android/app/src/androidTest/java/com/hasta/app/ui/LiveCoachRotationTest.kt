@@ -1,15 +1,17 @@
 package com.hasta.app.ui
 
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.DeviceConfigurationOverride
+import androidx.compose.ui.test.ForcedSize
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.hasta.app.domain.tracking.TrackingState
@@ -20,9 +22,11 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * Rotation must produce a clean layout in both orientations: the panel stays
- * clear of the top bar and keeps a readable column width. These checks use the
- * pure screen with a fixed-size stage, so no CameraX is involved.
+ * Rotation must produce a clean layout in both orientations: the panel stays clear
+ * of the top bar and keeps a readable column width.
+ *
+ * The viewport is forced with [DeviceConfigurationOverride] so the assertions do not
+ * depend on the physical test device's size or current orientation.
  */
 @RunWith(AndroidJUnit4::class)
 class LiveCoachRotationTest {
@@ -30,14 +34,15 @@ class LiveCoachRotationTest {
     @get:Rule
     val compose = createComposeRule()
 
-    private val size = mutableStateOf(393.dp to 852.dp)
+    private val viewport = mutableStateOf(DpSize(393.dp, 852.dp))
 
-    private fun show(width: Dp, height: Dp) {
-        size.value = width to height
+    private fun show(size: DpSize) {
+        viewport.value = size
         compose.setContent {
-            val (w, h) = size.value
-            HastaCameraTheme(reducedMotion = false) {
-                Box(Modifier.size(w, h)) {
+            DeviceConfigurationOverride(
+                DeviceConfigurationOverride.ForcedSize(viewport.value),
+            ) {
+                HastaCameraTheme(reducedMotion = false) {
                     LiveCoachScreen(
                         state = LiveCoachUiState(
                             tracking = TrackingState.TwoHands,
@@ -47,7 +52,7 @@ class LiveCoachRotationTest {
                             ),
                         ),
                         onAction = {},
-                        stage = { Box(Modifier.size(w, h)) },
+                        stage = { Box(Modifier.fillMaxSize()) },
                     )
                 }
             }
@@ -56,7 +61,7 @@ class LiveCoachRotationTest {
 
     @Test
     fun portraitKeepsThePanelAtTheBottomWithUsableMargins() {
-        show(width = 393.dp, height = 852.dp)
+        show(DpSize(393.dp, 852.dp))
 
         val panel = compose.onNodeWithTag(COACH_PANEL_TAG).getUnclippedBoundsInRoot()
         val topBar = compose.onNodeWithTag(LIVE_TOP_BAR_TAG).getUnclippedBoundsInRoot()
@@ -65,12 +70,15 @@ class LiveCoachRotationTest {
         assertTrue("panel should sit in the lower half", panel.top > 393.dp)
         assertTrue("panel must stay inside the screen", panel.bottom <= 852.dp)
         assertTrue("panel must clear the top bar", panel.top > topBar.bottom)
-        assertTrue("panel keeps horizontal margins", panel.left >= 8.dp && panel.right <= 385.dp)
+        assertTrue(
+            "panel keeps horizontal margins",
+            panel.left >= 8.dp && panel.right <= 385.dp,
+        )
     }
 
     @Test
     fun landscapeMovesThePanelToTheRightOfThePreview() {
-        show(width = 852.dp, height = 393.dp)
+        show(DpSize(852.dp, 393.dp))
 
         val panel = compose.onNodeWithTag(COACH_PANEL_TAG).getUnclippedBoundsInRoot()
         val topBar = compose.onNodeWithTag(LIVE_TOP_BAR_TAG).getUnclippedBoundsInRoot()
@@ -85,10 +93,10 @@ class LiveCoachRotationTest {
 
     @Test
     fun rotatingAtRuntimeKeepsStatusAndActionVisible() {
-        show(width = 393.dp, height = 852.dp)
+        show(DpSize(393.dp, 852.dp))
         compose.onNodeWithText("Stop practice").assertIsDisplayed()
 
-        compose.runOnIdle { size.value = 852.dp to 393.dp }
+        compose.runOnIdle { viewport.value = DpSize(852.dp, 393.dp) }
 
         compose.onNodeWithText("Stop practice").assertIsDisplayed()
         compose.onNodeWithText("Practising…").assertIsDisplayed()

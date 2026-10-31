@@ -57,15 +57,10 @@ fun LiveCoachScreen(
             .fillMaxSize()
             .background(Color.Black),
     ) {
-        val stageWidth = maxWidth
-        val stageHeight = maxHeight
-        val isLandscape = stageWidth > stageHeight
+        val screenWidth = maxWidth
+        val screenHeight = maxHeight
+        val isLandscape = screenWidth > screenHeight
         val screenInset = if (isLandscape) HastaSpacing.lg else HastaSpacing.md
-        val panelMaxHeight = if (isLandscape) {
-            (stageHeight - HastaSizes.topBar - HastaSpacing.lg).coerceAtLeast(200.dp)
-        } else {
-            stageHeight * 0.56f
-        }
 
         Box(modifier = Modifier.fillMaxSize()) {
             stage()
@@ -83,11 +78,25 @@ fun LiveCoachScreen(
                 ),
         )
 
-        Box(
+        // Chrome lives inside the safe area, and the panel's height budget is measured
+        // from that same box. Measuring it against the full window (as an earlier
+        // version did) let the landscape panel overflow the bottom of the screen and
+        // clip its primary action.
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .windowInsetsPadding(WindowInsets.safeDrawing),
         ) {
+            val safeWidth = maxWidth
+            val safeHeight = maxHeight
+            // The bar occupies its minimum height plus its vertical padding.
+            val panelTopGap = HastaSizes.topBar + HastaSpacing.xs * 2
+            val panelMaxHeight = if (isLandscape) {
+                (safeHeight - panelTopGap - HastaSpacing.sm).coerceAtLeast(200.dp)
+            } else {
+                safeHeight * 0.56f
+            }
+
             HastaTopBar(
                 onCamera = true,
                 compact = isLandscape,
@@ -117,12 +126,12 @@ fun LiveCoachScreen(
                     modifier = Modifier
                         .align(Alignment.Center)
                         .offset(
-                            x = if (isLandscape) -(stageWidth * 0.10f) else 0.dp,
-                            y = if (isLandscape) 0.dp else -(stageHeight * 0.08f),
+                            x = if (isLandscape) -(safeWidth * 0.10f) else 0.dp,
+                            y = if (isLandscape) 0.dp else -(safeHeight * 0.08f),
                         )
                         .size(
-                            width = if (isLandscape) stageWidth * 0.42f else stageWidth * 0.72f,
-                            height = if (isLandscape) stageHeight * 0.62f else stageHeight * 0.34f,
+                            width = if (isLandscape) safeWidth * 0.42f else safeWidth * 0.72f,
+                            height = if (isLandscape) safeHeight * 0.62f else safeHeight * 0.34f,
                         ),
                 )
             }
@@ -133,18 +142,18 @@ fun LiveCoachScreen(
                 maxHeight = panelMaxHeight,
                 modifier = if (isLandscape) {
                     Modifier
-                        .testTag(COACH_PANEL_TAG)
-                        .align(Alignment.CenterEnd)
+                        .align(Alignment.TopEnd)
                         .padding(
                             end = screenInset,
-                            top = HastaSizes.topBar + HastaSpacing.xs,
+                            top = panelTopGap,
                         )
+                        .testTag(COACH_PANEL_TAG)
                         .widthIn(max = 320.dp)
                 } else {
                     Modifier
-                        .testTag(COACH_PANEL_TAG)
                         .align(Alignment.BottomCenter)
                         .padding(horizontal = screenInset, vertical = HastaSpacing.sm)
+                        .testTag(COACH_PANEL_TAG)
                         .fillMaxWidth()
                         .widthIn(max = 560.dp)
                 },
