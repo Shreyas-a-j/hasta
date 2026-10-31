@@ -139,7 +139,7 @@ class LiveCoachStateRenderingTest {
         show(LiveCoachUiState(tracking = TrackingState.CameraUnavailable))
 
         compose.onNodeWithText("Camera could not start").assertIsDisplayed()
-        compose.onNodeWithText("Try again").assertIsDisplayed()
+        compose.onNodeWithText("Try camera again").assertIsDisplayed()
     }
 
     @Test

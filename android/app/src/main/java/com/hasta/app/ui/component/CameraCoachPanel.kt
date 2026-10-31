@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -29,7 +30,6 @@ import com.hasta.app.ui.CoachAction
 import com.hasta.app.ui.CoachPanelKind
 import com.hasta.app.ui.CoachUiModel
 import com.hasta.app.ui.HandVisibility
-import com.hasta.app.ui.actionAccessibilityText
 import com.hasta.app.ui.actionText
 import com.hasta.app.ui.coachText
 import com.hasta.app.ui.theme.HastaSpacing
@@ -88,7 +88,7 @@ fun CameraCoachPanel(
         ) {
             if (previewOnly) {
                 PreviewBadge()
-                Spacer(Modifier.padding(top = HastaSpacing.md))
+                Spacer(Modifier.height(HastaSpacing.md))
             }
 
             if (model.kind in HAND_VISIBILITY_KINDS) {
@@ -96,7 +96,7 @@ fun CameraCoachPanel(
                     visibility = model.handVisibility,
                     tone = model.tone,
                 )
-                Spacer(Modifier.padding(top = HastaSpacing.sm))
+                Spacer(Modifier.height(HastaSpacing.sm))
             }
 
             Text(
@@ -105,7 +105,7 @@ fun CameraCoachPanel(
                 color = colors.cameraText,
                 modifier = Modifier.semantics { heading() },
             )
-            Spacer(Modifier.padding(top = HastaSpacing.xs))
+            Spacer(Modifier.height(HastaSpacing.xs))
             Text(
                 text = text.body,
                 style = MaterialTheme.typography.bodyMedium,
@@ -113,7 +113,7 @@ fun CameraCoachPanel(
             )
 
             if (model.kind == CoachPanelKind.Practising && model.progress != null) {
-                Spacer(Modifier.padding(top = HastaSpacing.md))
+                Spacer(Modifier.height(HastaSpacing.md))
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.End,
@@ -138,7 +138,7 @@ fun CameraCoachPanel(
             }
 
             if (text.footnote != null) {
-                Spacer(Modifier.padding(top = HastaSpacing.sm))
+                Spacer(Modifier.height(HastaSpacing.sm))
                 Text(
                     text = text.footnote,
                     style = MaterialTheme.typography.labelSmall,
@@ -148,7 +148,7 @@ fun CameraCoachPanel(
 
             val action = model.primaryAction
             if (action != null) {
-                Spacer(Modifier.padding(top = HastaSpacing.md))
+                Spacer(Modifier.height(HastaSpacing.md))
                 HastaButton(
                     text = actionText(action),
                     onClick = { onAction(action) },
@@ -160,7 +160,6 @@ fun CameraCoachPanel(
                     },
                     enabled = model.primaryEnabled,
                     icon = actionIcon(action),
-                    contentDescription = actionAccessibilityText(action),
                 )
             }
         }

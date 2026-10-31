@@ -254,8 +254,9 @@ advances (at 1s granularity instead of 100ms) so the window completes honestly.
 - Minimum height: 56dp for primary/secondary, 48dp for text.
 - Fully rounded 12dp corners, 20dp horizontal padding, optional 18dp leading glyph.
 - Disabled state uses `surfaceRaised` + `textSecondary`, never reduced alpha.
-- The visible label is the accessible name; a longer `contentDescription` may add
-  intent ("Start a five second practice window") without replacing the label.
+- The visible label is the accessible name. Controls must not replace it with a
+  hidden description; if a label needs more context (for example a camera retry),
+  make the visible label itself explicit ("Try camera again").
 
 ### 11.2 Surfaces and cards — `HastaCard`
 
@@ -330,7 +331,7 @@ non-camera screens.
 | Practising, hands lost | "Practising…" + hands-out-of-view body | Warning | Stop practice |
 | Window complete | "Practice window complete" | Neutral | Practise again |
 | Tracking paused | "Hand tracking paused" | Error | Try tracking again |
-| Camera unavailable | "Camera could not start" | Error | Try again |
+| Camera unavailable | "Camera could not start" | Error | Try camera again |
 | Permission required | "Camera access is needed" | Neutral | Allow camera |
 
 Notes:
@@ -402,10 +403,16 @@ Both:
 
 - `WindowInsets.safeDrawing` keeps content clear of cutouts, the status bar and the
   gesture bar.
-- The practice timer is saved with `rememberSaveable`, so rotating mid-window keeps
-  the remaining time and does not restart or double-count.
-- Camera and tracker sessions survive rotation through the lifecycle owner; the
-  preview is not recreated per recomposition.
+- The practice window is saved with `rememberSaveable`, so rotating mid-window keeps
+  the remaining time and does not restart or double-count. The activity itself is
+  recreated, so the camera is unbound and rebound; the learner sees at most a brief
+  "Starting camera" state, never a lost session.
+- The window only advances while the screen is started. Backgrounding the app
+  freezes the remaining time instead of completing a session during which no frames
+  were analysed, and a camera or tracker failure stops the window rather than letting
+  the timer outlive the frames.
+- Frame and panel state are separate streams, so 21-point landmark updates do not
+  recompose the feedback panel.
 
 `LiveCoachRotationTest` asserts panel placement, margins and top-bar clearance in
 both orientations and across a runtime rotation.

@@ -129,14 +129,3 @@ internal fun actionText(action: CoachAction): String = stringResource(
         CoachAction.OpenSettings -> R.string.action_open_settings
     },
 )
-
-@Composable
-internal fun actionAccessibilityText(action: CoachAction): String? = when (action) {
-    CoachAction.StartPractice -> stringResource(R.string.a11y_start_practice)
-    CoachAction.StopPractice -> stringResource(R.string.a11y_stop_practice)
-    CoachAction.RetryTracking -> stringResource(R.string.a11y_retry_tracking)
-    CoachAction.RetryCamera -> stringResource(R.string.a11y_retry_camera)
-    CoachAction.AllowCamera -> stringResource(R.string.a11y_allow_camera)
-    CoachAction.OpenSettings -> stringResource(R.string.a11y_open_settings)
-    CoachAction.PractiseAgain -> null
-}

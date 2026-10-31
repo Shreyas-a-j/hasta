@@ -36,9 +36,11 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.LifecycleStartEffect
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.hasta.app.R
 import com.hasta.app.data.benchmark.BenchmarkRecorder
 import com.hasta.app.data.benchmark.BenchmarkState
+import com.hasta.app.domain.tracking.TrackingState
 import com.hasta.app.ui.component.HandOverlay
 import com.hasta.app.ui.permission.CameraPermissionStatus
 import com.hasta.app.ui.permission.PermissionStatusReader
@@ -150,13 +152,24 @@ private fun CameraContent(
         mutableStateOf(PracticeUiState())
     }
 
-    LaunchedEffect(practice.phase, reducedMotion) {
-        if (practice.phase == PracticePhase.Running) {
+    // The window only advances while the screen is started, so backgrounding the
+    // app cannot "complete" a session during which no frames were analysed.
+    LaunchedEffect(practice.phase, reducedMotion, lifecycleOwner) {
+        if (practice.phase != PracticePhase.Running) return@LaunchedEffect
+        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.STARTED) {
             val tick = if (reducedMotion) 1_000L else 100L
             while (true) {
                 delay(tick)
                 practice = practice.advance(tick)
             }
+        }
+    }
+
+    // A camera or tracker failure ends the window rather than letting the timer run
+    // on without frames and then claim the hands stayed in view.
+    LaunchedEffect(tracking) {
+        if (tracking == TrackingState.TrackingError || tracking == TrackingState.CameraUnavailable) {
+            practice = practice.stop()
         }
     }
 

@@ -1,13 +1,13 @@
 package com.hasta.app.ui
 
-import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
 import com.hasta.app.domain.model.HandObservation
 
 /**
  * High-frequency frame state. Only the preview/overlay subtree collects this, so
  * landmark updates do not recompose the coach panel.
  */
-@Immutable
+@Stable
 data class FrameUiState(
     val hands: List<HandObservation> = emptyList(),
     val imageWidth: Int = 0,

@@ -1,7 +1,6 @@
 package com.hasta.app.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -64,13 +63,6 @@ fun PermissionScreen(
             R.string.action_open_settings
         } else {
             R.string.action_allow_camera
-        },
-    )
-    val primaryDescription = stringResource(
-        if (kind == PermissionScreenKind.PermanentlyDenied) {
-            R.string.a11y_open_settings
-        } else {
-            R.string.a11y_allow_camera
         },
     )
 
@@ -142,7 +134,6 @@ fun PermissionScreen(
             } else {
                 HastaIconName.Camera
             },
-            contentDescription = primaryDescription,
         )
 
         if (kind == PermissionScreenKind.Denied) {
@@ -151,7 +142,6 @@ fun PermissionScreen(
                 onClick = onOpenSettings,
                 modifier = Modifier.padding(top = HastaSpacing.xs),
                 variant = HastaButtonVariant.Text,
-                contentDescription = stringResource(R.string.a11y_open_settings),
             )
         }
     }

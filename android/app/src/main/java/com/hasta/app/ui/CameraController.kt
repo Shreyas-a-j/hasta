@@ -41,9 +41,18 @@ class CameraController(
 
     private var session: CameraSession? = null
 
+    /**
+     * Invalidates callbacks from a session that has been torn down. The analysis
+     * thread can deliver one last result after [restart], and it must not overwrite
+     * the state of the session that replaced it.
+     */
+    @Volatile
+    private var sessionGeneration = 0
+
     fun start() {
         if (session != null) return
         resetState()
+        val generation = ++sessionGeneration
 
         session = CameraSession(
             context = context,
@@ -51,17 +60,23 @@ class CameraController(
             previewView = previewView,
             stats = stats,
             onFrame = { frame, timing ->
-                benchmark?.onFrame(
-                    resultElapsedMs = timing.resultElapsedMs,
-                    latencyMs = timing.latencyMs,
-                    rotationDegrees = timing.rotationDegrees,
-                )
-                publishFrame(frame)
+                if (generation == sessionGeneration) {
+                    benchmark?.onFrame(
+                        resultElapsedMs = timing.resultElapsedMs,
+                        latencyMs = timing.latencyMs,
+                        rotationDegrees = timing.rotationDegrees,
+                    )
+                    publishFrame(frame)
+                }
             },
-            onTrackingError = ::publishTrackingError,
-            onCameraError = ::publishCameraError,
+            onTrackingError = { message ->
+                if (generation == sessionGeneration) publishTrackingError(message)
+            },
+            onCameraError = { message ->
+                if (generation == sessionGeneration) publishCameraError(message)
+            },
             onCameraReady = {
-                if (_tracking.value == TrackingState.Initializing) {
+                if (generation == sessionGeneration && _tracking.value == TrackingState.Initializing) {
                     _tracking.value = TrackingState.CameraReady
                 }
             },
@@ -70,6 +85,7 @@ class CameraController(
 
     fun stop() {
         benchmark?.onPipelineStopped()
+        sessionGeneration++
         session?.stop()
         session = null
         resetState()

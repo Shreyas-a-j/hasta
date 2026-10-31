@@ -76,6 +76,25 @@ engine, full navigation, pose and face tracking.
   `dataExtractionRules` and `fullBackupContent="false"`.
 - Version `0.2.0-m0.5`, `versionCode 2`.
 
+### Review follow-up
+
+A fresh-context review of the change set found two lifecycle defects, both fixed:
+
+- `CameraController` now ignores callbacks from a superseded session. `restart()`
+  increments a generation counter before tearing the old session down, so a late
+  MediaPipe result or error cannot overwrite the state of the replacement session.
+- The practice window now advances only while the screen is `STARTED`. Backgrounding
+  the app freezes the remaining time instead of completing a window during which no
+  frames were analysed, and a camera or tracker failure stops the window rather than
+  letting the timer outlive the frames. The completion copy no longer claims the
+  hands stayed in view.
+
+Also corrected from the review: `FrameUiState` is `@Stable` rather than `@Immutable`
+(it exposes a `List`), buttons keep their visible label as the accessible name, the
+camera retry label is explicitly "Try camera again", spacers use `height`, preview
+colours come from the dark token set, and the rotation note in the visual spec now
+states that the activity is recreated while the saved practice window survives.
+
 ### Unchanged
 
 `perception/`, `domain/`, `data/` implementation, the MediaPipe configuration, GPU

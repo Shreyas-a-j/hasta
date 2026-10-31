@@ -43,7 +43,7 @@
     <string name="coach_practising_footnote">Nothing is saved. This window only checks that tracking stays stable.</string>
 
     <string name="coach_complete_title">Practice window complete</string>
-    <string name="coach_complete_body">Your hands stayed in view for the window. Sign feedback arrives in a later milestone.</string>
+    <string name="coach_complete_body">The five-second window finished. Sign feedback arrives in a later milestone.</string>
     <string name="coach_complete_footnote">No sign was recognised or saved.</string>
 
     <string name="coach_tracking_paused_title">Hand tracking paused</string>
@@ -68,17 +68,11 @@
     <string name="action_stop_practice">Stop practice</string>
     <string name="action_practise_again">Practise again</string>
     <string name="action_retry_tracking">Try tracking again</string>
-    <string name="action_retry_camera">Try again</string>
+    <string name="action_retry_camera">Try camera again</string>
     <string name="action_allow_camera">Allow camera</string>
     <string name="action_open_settings">Open settings</string>
 
     <!-- Accessibility descriptions for controls -->
-    <string name="a11y_start_practice">Start a five second practice window</string>
-    <string name="a11y_stop_practice">Stop the practice window</string>
-    <string name="a11y_retry_tracking">Try restarting hand tracking</string>
-    <string name="a11y_retry_camera">Try starting the camera again</string>
-    <string name="a11y_allow_camera">Allow camera access</string>
-    <string name="a11y_open_settings">Open Android settings for HASTA</string>
     <string name="a11y_camera_stage">Camera preview with hand tracking overlay</string>
     <string name="a11y_overlay_no_hands">Hand skeleton overlay, no hands</string>
     <string name="a11y_overlay_one_hand">Hand skeleton overlay, one hand</string>
@@ -117,5 +111,5 @@
     <string name="lesson_preview_subtitle">Beginner path · Lesson 3</string>
     <string name="lesson_preview_level">Beginner</string>
     <string name="lesson_preview_duration">6 min</string>
-    <string name="lesson_preview_progress">40%% complete</string>
+    <string name="lesson_preview_progress" tools:ignore="StringFormatInvalid">40% complete</string>
 </resources>

@@ -15,6 +15,7 @@ import com.hasta.app.domain.tracking.TrackingState
 import com.hasta.app.ui.component.CameraCoachPanel
 import com.hasta.app.ui.component.LessonCard
 import com.hasta.app.ui.theme.HastaCameraTheme
+import com.hasta.app.ui.theme.HastaDarkColors
 import com.hasta.app.ui.theme.HastaTheme
 import com.hasta.app.ui.theme.HastaTone
 
@@ -48,7 +49,7 @@ private val PreviewStage: @Composable BoxScope.() -> Unit = {
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF2B2533), Color(0xFF141218)),
+                    listOf(HastaDarkColors.surfaceRaised, HastaDarkColors.background),
                 ),
             ),
     )
@@ -134,7 +135,7 @@ private fun CameraUnavailablePreview() {
 @Composable
 private fun EvaluatingPreview() {
     HastaCameraTheme(reducedMotion = false) {
-        Box(Modifier.fillMaxSize().background(Color(0xFF141218))) {
+        Box(Modifier.fillMaxSize().background(HastaDarkColors.background)) {
             CameraCoachPanel(
                 model = model(
                     kind = CoachPanelKind.Evaluating,
@@ -152,7 +153,7 @@ private fun EvaluatingPreview() {
 @Composable
 private fun RecognizedPreview() {
     HastaCameraTheme(reducedMotion = false) {
-        Box(Modifier.fillMaxSize().background(Color(0xFF141218))) {
+        Box(Modifier.fillMaxSize().background(HastaDarkColors.background)) {
             CameraCoachPanel(
                 model = model(
                     kind = CoachPanelKind.Recognized,
@@ -170,7 +171,7 @@ private fun RecognizedPreview() {
 @Composable
 private fun FeedbackPreview() {
     HastaCameraTheme(reducedMotion = false) {
-        Box(Modifier.fillMaxSize().background(Color(0xFF141218))) {
+        Box(Modifier.fillMaxSize().background(HastaDarkColors.background)) {
             CameraCoachPanel(
                 model = model(
                     kind = CoachPanelKind.Feedback,
@@ -188,7 +189,7 @@ private fun FeedbackPreview() {
 @Composable
 private fun LowConfidencePreview() {
     HastaCameraTheme(reducedMotion = false) {
-        Box(Modifier.fillMaxSize().background(Color(0xFF141218))) {
+        Box(Modifier.fillMaxSize().background(HastaDarkColors.background)) {
             CameraCoachPanel(
                 model = model(
                     kind = CoachPanelKind.LowConfidence,

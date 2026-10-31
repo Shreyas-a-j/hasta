@@ -17,8 +17,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import com.hasta.app.ui.theme.HastaRadius
 import com.hasta.app.ui.theme.HastaSizes
@@ -34,17 +32,10 @@ fun HastaButton(
     variant: HastaButtonVariant = HastaButtonVariant.Primary,
     enabled: Boolean = true,
     icon: HastaIconName? = null,
-    contentDescription: String? = null,
 ) {
     val colors = HastaTheme.colors
-    val semantics = if (contentDescription == null) {
-        Modifier
-    } else {
-        Modifier.semantics { this.contentDescription = contentDescription }
-    }
     val shared = modifier
         .heightIn(min = if (variant == HastaButtonVariant.Text) HastaSizes.touchTarget else HastaSizes.primaryAction)
-        .then(semantics)
 
     val content: @Composable RowScope.() -> Unit = {
         Row(
@@ -54,7 +45,11 @@ fun HastaButton(
             if (icon != null) {
                 HastaIcon(
                     name = icon,
-                    tint = if (variant == HastaButtonVariant.Primary) colors.onBrandPrimary else colors.onBrandContainer,
+                    tint = when (variant) {
+                        HastaButtonVariant.Primary -> colors.onBrandPrimary
+                        HastaButtonVariant.Secondary -> colors.onBrandContainer
+                        HastaButtonVariant.Text -> colors.brandAccent
+                    },
                     modifier = Modifier.size(18.dp),
                 )
                 Spacer(Modifier.width(8.dp))
