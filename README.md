@@ -2,22 +2,34 @@
 
 Offline-first Indian Sign Language learning application.
 
-**Current state: M0 — device feasibility spike.** This repository contains only the
-technical pipeline needed to answer one question: can CameraX and MediaPipe Hand
-Landmarker track up to two hands continuously, with an aligned skeleton overlay, on
-the target physical Android phone?
+**Current state: M0.5 — brand theme and Live Sign Coach camera shell.** The M0
+camera and tracking engine is complete and verified on a physical device. M0.5 adds
+the HASTA design system and replaces the feasibility screen with a polished, honest
+coaching interface.
 
-There is no sign recognition, vocabulary, lesson system or navigation yet.
+There is still no sign recognition, vocabulary, lesson system or navigation.
 
-## What M0 does
+## What M0.5 does
 
-- Requests camera permission and handles every permission state.
-- Shows a front-camera CameraX preview.
-- Runs MediaPipe Hand Landmarker in `LIVE_STREAM` mode with up to two hands.
-- Draws all 21 landmarks per hand, using the correct hand connections.
-- Handles front-camera mirroring and device rotation.
-- Shows a simple tracking state (no hands / one hand / two hands / error).
-- Provides a debug-only ten-minute benchmark with CSV/JSON export.
+- Applies the locked HASTA palette in light and dark themes, with documented contrast.
+- Presents Live Sign Coach: ready, no hands, one hand, two hands, practising,
+  practice complete, tracking paused, camera unavailable and permission states.
+- Runs a five-second practice window that reports whether tracking stayed stable.
+  It does not recognise, grade or save anything, and the copy says so.
+- Keeps the camera preview and hand skeleton as the primary content, with no raw
+  coordinates, FPS or confidence on the live screen.
+- Handles rotation cleanly: bottom panel in portrait, right-side panel in landscape.
+- Supports font scaling, screen readers, 48dp touch targets, reduced motion and
+  non-colour status.
+
+## What M0 established
+
+- CameraX Preview + ImageAnalysis (front camera, 4:3) with
+  `STRATEGY_KEEP_ONLY_LATEST`.
+- MediaPipe Hand Landmarker in `LIVE_STREAM` mode with up to two hands.
+- All 21 landmarks per hand with correct connections and display-only mirroring.
+- Debug-only ten-minute benchmark with CSV/JSON export.
+- Verified baseline: 8.39 FPS over 600.9 s on a moto g64 5G.
 
 ## Requirements
 
@@ -40,11 +52,13 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:assembleDebug
 
 The APK is written to `android/app/build/outputs/apk/debug/app-debug.apk`.
 
-Run unit tests:
+Run unit tests, lint and release build:
 
 ```bash
 cd android
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:lintDebug
+JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:assembleRelease
 ```
 
 ## Install and run
@@ -62,14 +76,14 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest
    adb install -r android/app/build/outputs/apk/debug/app-debug.apk
    ```
 
-4. Open **HASTA M0** and grant camera permission.
-5. Verify the permission matrix and device scenarios in
-   [`docs/tasks/M0.md`](docs/tasks/M0.md).
+4. Open **HASTA** and grant camera permission.
+5. Bring both hands into view and start a practice window.
+6. Rotate the device while a window is running to confirm the layout and timer.
 
 ## Benchmark
 
 The benchmark is available only in debug builds. Long-press the tracking status
-chip to start a ten-minute run (it stops automatically; long-press again to abort).
+pill to start a ten-minute run (it stops automatically; long-press again to abort).
 
 Export files are written to the app-private files directory
 (`files/benchmark/`), so no storage permission is required:
@@ -89,8 +103,10 @@ test protocol.
 
 ## Documentation
 
-- [`docs/spec/product-scope.md`](docs/spec/product-scope.md) — M0 boundaries
+- [`docs/spec/product-scope.md`](docs/spec/product-scope.md) — M0 scope and M0.5 addendum
+- [`docs/spec/visual-spec.md`](docs/spec/visual-spec.md) — normative design system
 - [`docs/architecture/m0-pipeline.md`](docs/architecture/m0-pipeline.md) — pipeline, coordinate transform, metrics
 - [`docs/architecture/m0-dependencies.md`](docs/architecture/m0-dependencies.md) — pinned versions and licences
 - [`docs/decisions/ADR-0001-hands-only-m0.md`](docs/decisions/ADR-0001-hands-only-m0.md) — hands-only and mirroring decisions
-- [`docs/reports/M0_DEVICE_FEASIBILITY_REPORT.md`](docs/reports/M0_DEVICE_FEASIBILITY_REPORT.md) — final evidence (produced after device testing)
+- [`docs/reports/M0_DEVICE_FEASIBILITY_REPORT.md`](docs/reports/M0_DEVICE_FEASIBILITY_REPORT.md) — M0 device evidence
+- [`docs/reports/M0_5_BRAND_AND_CAMERA_SHELL_REPORT.md`](docs/reports/M0_5_BRAND_AND_CAMERA_SHELL_REPORT.md) — M0.5 report
