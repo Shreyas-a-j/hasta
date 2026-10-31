@@ -78,20 +78,35 @@ class HandResultMapperTest {
     }
 
     @Test
-    fun `rotation 270 swaps image dimensions`() {
-        val frame = map(hands = emptyList(), rotation = 270)
-        assertEquals(480, frame!!.imageWidth)
-        assertEquals(640, frame.imageHeight)
+    fun `mapper never rotates the upright image it is given`() {
+        // Regression: the tracker used to hand the mapper the raw sensor size and let it
+        // swap dimensions for 90/270. MediaPipe does not apply that rotation, which put
+        // the skeleton 180 degrees out on the device. The bitmap is rotated before
+        // inference now, so the mapper must pass the dimensions through untouched for
+        // every rotation value.
+        listOf(0, 90, 180, 270).forEach { rotation ->
+            val frame = map(hands = emptyList(), rotation = rotation, width = 640, height = 480)
+            assertEquals("rotation $rotation must not swap width", 640, frame!!.imageWidth)
+            assertEquals("rotation $rotation must not swap height", 480, frame.imageHeight)
+            assertEquals(rotation, frame.rotationDegrees)
+        }
+    }
+
+    @Test
+    fun `graceful failure reports no frame for degenerate image size`() {
+        assertNull(map(hands = emptyList(), width = 0, height = 480))
     }
 
     private fun map(
         hands: List<RawHand>,
         rotation: Int = 90,
+        width: Int = 480,
+        height: Int = 640,
         isFrontCamera: Boolean = true,
     ) = HandResultMapper.map(
         timestampMs = 1234L,
-        sensorWidth = 640,
-        sensorHeight = 480,
+        imageWidth = width,
+        imageHeight = height,
         rotationDegrees = rotation,
         isFrontCamera = isFrontCamera,
         hands = hands,

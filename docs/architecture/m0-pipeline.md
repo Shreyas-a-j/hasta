@@ -48,18 +48,27 @@ separate CameraX use case, so analysis throttling never blocks preview rendering
 | Space | Width × height | Meaning |
 |---|---|---|
 | Sensor image | `W × H` | raw `ImageProxy`, rotated per device |
-| Upright analysis | `W' × H'` | after `rotationDegrees` (90/270 swap W and H) |
+| Upright analysis | `W' × H'` | sensor bitmap rotated in app (90/270 swap W and H) |
 | Overlay view | `vw × vh` | Compose Canvas over the preview, same bounds |
+
+`W' × H'` is also what `HandFrame.imageWidth` / `imageHeight` report, so the overlay
+never re-derives it.
 
 ### Steps
 
 1. Read `ImageProxy.imageInfo.rotationDegrees` (`0`, `90`, `180`, `270`).
-2. Hand the unrotated bitmap and the rotation to MediaPipe:
-   `ImageProcessingOptions.builder().setRotationDegrees(rotationDegrees)`.
-   MediaPipe returns landmarks normalized to the upright image.
-3. Do **not** mirror the input. Handedness stays subject-relative, as documented by
+2. Rotate the analysis bitmap clockwise by `rotationDegrees` **before** inference
+   (`perception/camera/FrameRotation.kt`). The bitmap handed to MediaPipe is
+   therefore already upright, and 90/270 swap its width and height.
+3. Call `detectAsync(image, timestamp)` with **no** `ImageProcessingOptions`
+   rotation. The task must not be asked to rotate: on the target device it ignored
+   the request and returned landmarks in the raw sensor frame, which put the
+   skeleton 180 degrees out (see
+   [ADR-0002](../decisions/ADR-0002-rotate-analysis-frame-in-app.md)). Requesting
+   zero rotation makes a double rotation structurally impossible.
+4. Do **not** mirror the input. Handedness stays subject-relative, as documented by
    Google ("Passing a horizontally mirrored image will invert these outputs").
-4. Map normalized `(x, y)` to view pixels with center-crop (`FILL_CENTER`):
+5. Map normalized `(x, y)` to view pixels with center-crop (`FILL_CENTER`):
 
 ```
 sx    = x * W'
@@ -72,7 +81,7 @@ py    = dy + sy * scale
 if (frontCamera) px = vw - px      // display-only mirror
 ```
 
-5. The preview stream and the analysis stream both request 4:3 with
+6. The preview stream and the analysis stream both request 4:3 with
    `AspectRatioStrategy.RATIO_4_3_FALLBACK_AUTO_STRATEGY`. If their real ratios
    differ, the transform is invalid; actual resolutions are logged and exported with
    every benchmark run, and the device checklist includes alignment in both
@@ -84,6 +93,12 @@ The activity is not locked and does not swallow configuration changes. Rotation
 recreates the activity, CameraX rebinds with the new `targetRotation`, the analysis
 rotation changes, the view size changes, and the transform is recomputed. The
 overlay is cleared during rebind so a stale skeleton is never shown.
+
+Rotation is applied to the analysis bitmap in this process, not by MediaPipe. The
+frame is rotated once, before inference, from `ImageInfo.rotationDegrees`; the task
+is always called with no rotation option. See
+[ADR-0002](../decisions/ADR-0002-rotate-analysis-frame-in-app.md) for the device
+evidence behind that decision.
 
 ### Handedness
 

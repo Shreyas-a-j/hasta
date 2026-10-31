@@ -8,6 +8,9 @@ import com.hasta.app.perception.tracker.HandLandmarkerTracker
 /**
  * Converts camera frames to bitmaps and submits them to the tracker.
  *
+ * The bitmap is rotated upright with [FrameRotation] before inference, so the tracker
+ * always receives an upright image and landmarks need no further rotation.
+ *
  * The ImageProxy is always closed in a finally block. A frame is skipped while the
  * tracker is busy, which bounds the pipeline to one in-flight frame.
  */
@@ -35,12 +38,12 @@ class FrameAnalyzer(
 
             val rotationDegrees = image.imageInfo.rotationDegrees
             val captureElapsedMs = image.imageInfo.timestamp / NANOS_PER_MILLI
-            val bitmap = image.toBitmap()
+            val upright = FrameRotation.rotate(image.toBitmap(), rotationDegrees)
 
             val accepted = tracker.detect(
-                bitmap = bitmap,
-                sensorWidth = image.width,
-                sensorHeight = image.height,
+                bitmap = upright,
+                imageWidth = upright.width,
+                imageHeight = upright.height,
                 rotationDegrees = rotationDegrees,
                 isFrontCamera = isFrontCamera,
                 captureElapsedMs = captureElapsedMs,

@@ -8,7 +8,6 @@ import com.google.mediapipe.framework.image.BitmapImageBuilder
 import com.google.mediapipe.framework.image.MPImage
 import com.google.mediapipe.tasks.core.BaseOptions
 import com.google.mediapipe.tasks.core.Delegate
-import com.google.mediapipe.tasks.vision.core.ImageProcessingOptions
 import com.google.mediapipe.tasks.vision.core.RunningMode
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarker
 import com.google.mediapipe.tasks.vision.handlandmarker.HandLandmarkerResult
@@ -66,13 +65,22 @@ class HandLandmarkerTracker(
     /**
      * Submits one frame. Returns true if MediaPipe accepted it.
      *
+     * [bitmap] must already be upright (see [com.hasta.app.perception.camera.FrameRotation]);
+     * no rotation is passed to the task. Asking the task to rotate produced landmarks
+     * in the unrotated sensor frame on the target device, which put the skeleton 180
+     * degrees out.
+     *
+     * @param imageWidth upright width of [bitmap]; landmarks are normalized to it.
+     * @param imageHeight upright height of [bitmap].
+     * @param rotationDegrees rotation that was applied to obtain the upright bitmap,
+     * kept for `HandFrame` metadata and the benchmark only.
      * @param captureElapsedMs camera frame timestamp from `ImageInfo.timestamp`
      * (nanoseconds) converted to elapsed-realtime milliseconds.
      */
     fun detect(
         bitmap: Bitmap,
-        sensorWidth: Int,
-        sensorHeight: Int,
+        imageWidth: Int,
+        imageHeight: Int,
         rotationDegrees: Int,
         isFrontCamera: Boolean,
         captureElapsedMs: Long,
@@ -83,8 +91,8 @@ class HandLandmarkerTracker(
 
         val executeAtMs = clock.next(SystemClock.uptimeMillis())
         pending = PendingFrame(
-            sensorWidth = sensorWidth,
-            sensorHeight = sensorHeight,
+            imageWidth = imageWidth,
+            imageHeight = imageHeight,
             rotationDegrees = rotationDegrees,
             isFrontCamera = isFrontCamera,
             captureElapsedMs = captureElapsedMs,
@@ -92,13 +100,7 @@ class HandLandmarkerTracker(
 
         val image = BitmapImageBuilder(bitmap).build()
         return try {
-            task.detectAsync(
-                image,
-                ImageProcessingOptions.builder()
-                    .setRotationDegrees(rotationDegrees)
-                    .build(),
-                executeAtMs,
-            )
+            task.detectAsync(image, executeAtMs)
             true
         } catch (error: Throwable) {
             busy.set(false)
@@ -185,8 +187,8 @@ class HandLandmarkerTracker(
 
         val mapped = HandResultMapper.map(
             timestampMs = result.timestampMs(),
-            sensorWidth = frame.sensorWidth,
-            sensorHeight = frame.sensorHeight,
+            imageWidth = frame.imageWidth,
+            imageHeight = frame.imageHeight,
             rotationDegrees = frame.rotationDegrees,
             isFrontCamera = frame.isFrontCamera,
             hands = hands,
@@ -217,8 +219,8 @@ class HandLandmarkerTracker(
     }
 
     private data class PendingFrame(
-        val sensorWidth: Int,
-        val sensorHeight: Int,
+        val imageWidth: Int,
+        val imageHeight: Int,
         val rotationDegrees: Int,
         val isFrontCamera: Boolean,
         val captureElapsedMs: Long,

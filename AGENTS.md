@@ -38,7 +38,8 @@ All coordinate mapping lives in `perception/overlay/OverlayTransform.kt` and is
 covered by JVM unit tests. The live pipeline is:
 
 1. `ImageProxy` in sensor orientation.
-2. Rotation applied by MediaPipe through `ImageProcessingOptions`.
+2. Bitmap rotated clockwise by `ImageInfo.rotationDegrees` before inference
+   (`FrameRotation`); MediaPipe is never asked to rotate (ADR-0002).
 3. Landmarks normalized against the upright analysis image.
 4. Center-crop (`FILL_CENTER`) mapping to the overlay view.
 5. Display-only horizontal mirror for the front camera.

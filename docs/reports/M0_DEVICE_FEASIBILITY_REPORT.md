@@ -61,13 +61,34 @@ step conversion and device-range clamping.
 | G5 — One hand detected | One-hand state and a single skeleton observed during device testing | **PASS** |
 | G6 — Two hands detected | Two distinct skeletons (white and red) observed, each on the correct hand | **PASS** |
 | G7 — 21 landmarks per hand exposed | Both skeletons render all 21 points; mapper rejects incomplete hands rather than padding | **PASS** |
-| G8 — Overlay aligns at 0° and 90° device rotation | Overlay aligned in portrait and landscape during device testing | **PASS** |
-| G9 — Front-camera mirroring aligns; handedness correct | Display-only mirror; signer confirmed the red skeleton corresponded to the physical right hand | **PASS** |
-| G10 — Rotation does not displace or crash overlay | Repeated portrait/landscape changes, same PID, no crash, overlay stayed aligned | **PASS** |
+| G8 — Overlay aligns at 0° and 90° device rotation | Overlay aligned in portrait and landscape during device testing | **PASS at the time; superseded — see §3.1** |
+| G9 — Front-camera mirroring aligns; handedness correct | Display-only mirror; signer confirmed the red skeleton corresponded to the physical right hand | **PASS at the time; superseded — see §3.1** |
+| G10 — Rotation does not displace or crash overlay | Repeated portrait/landscape changes, same PID, no crash, overlay stayed aligned | **PASS at the time; superseded — see §3.1** |
 | G11 — No proxy leak or analyzer stall across enter/exit | 10× Home/resume cycles plus repeated rotations: PID unchanged (`14645`), no `FATAL EXCEPTION`, one camera device open, preview and frame flow recovered | **PASS** |
 | G12 — Ten-minute benchmark completed on the physical phone | Run `benchmark-20261030-230602`: `endReason=duration_complete`, 600.9 s, 14,925 submitted / 5,039 processed / 9,887 skipped / 0 errors, 8.39 FPS | **PASS** |
 | G13 — Benchmark CSV + JSON export and report generated | Both files exported from `files/benchmark/`; CSV has 5,031 data rows, JSON carries the full schema and this report records the result | **PASS** |
 | G14 — Limitations documented | Section 7 of this report | **PASS** |
+
+### 3.1 Correction — overlay rotation (31 October 2026)
+
+G8, G9 and G10 were judged visually and were **wrong**. Measured on the same device
+during M0.5, the skeleton was rotated 180 degrees against the real hand.
+
+The cause was that the MediaPipe Hand Landmarker ignored
+`ImageProcessingOptions.setRotationDegrees`, returning landmarks in the raw sensor
+frame while the overlay assumed an upright frame. With rotation metadata `180`, a
+right hand held fingers-up produced `wrist=(0.385,0.300)` and
+`midtip=(0.401,0.749)` — the fingertip below the wrist — and the predicted screen
+positions matched the captured screenshot.
+
+The fix rotates the analysis bitmap in the app before inference and passes no
+rotation to the task. See
+[ADR-0002](../decisions/ADR-0002-rotate-analysis-frame-in-app.md) for the evidence
+and `docs/reports/M0_5_BRAND_AND_CAMERA_SHELL_REPORT.md` for the post-fix device
+verification.
+
+Consequence for how gates are judged: "looks aligned" is not evidence. Any future
+overlay gate must record landmark coordinates alongside a screenshot.
 
 ## 4. Benchmark status
 
