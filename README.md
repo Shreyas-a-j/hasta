@@ -2,10 +2,12 @@
 
 Offline-first Indian Sign Language learning application.
 
-**Current state: M0.5 — brand theme and Live Sign Coach camera shell.** The M0
-camera and tracking engine is complete and verified on a physical device. M0.5 adds
-the HASTA design system and replaces the feasibility screen with a polished, honest
-coaching interface.
+**Current state: M1 — feature contract and research tooling.** The M0 camera and
+tracking engine is complete and verified on a physical device. M0.5 added the
+HASTA design system and the Live Sign Coach camera shell. M1 locks the
+`features-v1` contract, adds a Python reference implementation, deterministic
+golden vectors, Kotlin parity tests and the research data tooling. The app UI and
+behaviour are unchanged.
 
 There is still no sign recognition, vocabulary, lesson system or navigation.
 
@@ -31,6 +33,26 @@ There is still no sign recognition, vocabulary, lesson system or navigation.
 - Debug-only ten-minute benchmark with CSV/JSON export.
 - Verified baseline: 8.39 FPS over 600.9 s on a moto g64 5G.
 
+## What M1 adds
+
+- A locked 256-channel `features-v1` contract:
+  `docs/spec/features-v1.md` and `contracts/feature_contract.json`.
+- A Python reference implementation in `research/features/` with explicit
+  missingness, isotropic image coordinates, causal temporal features and
+  deterministic slot assignment.
+- Deterministic golden vectors and a generated Kotlin golden source under
+  `contracts/golden_vectors/features_v1/`.
+- A Kotlin `Double` implementation in `domain/features/` with JVM parity tests at
+  `atol = 1e-6`, `rtol = 1e-5` and exact masks.
+- Research capture and extraction tooling:
+  `research/extract/`, `docs/spec/research-data.md`, manifest audit and scoped,
+  logged deletion. Raw video is never stored.
+- CI via `.github/workflows/verify.yml` and `scripts/verify.sh`, with parity tests
+  first.
+
+M1 does **not** add recognition, LiteRT, GRU/CNN, vocabulary, lessons, Room,
+DataStore, cloud services, pose or face tracking.
+
 ## Requirements
 
 | Tool | Version |
@@ -40,6 +62,8 @@ There is still no sign recognition, vocabulary, lesson system or navigation.
 | Android build-tools | 36.0.0 |
 | Android device | API 26+, physical phone with a front camera |
 | Gradle | provided wrapper (8.14.3) |
+| Python | 3.12 (research tooling only) |
+| uv | 0.13+ (research tooling only) |
 
 The project deliberately has **no INTERNET permission**.
 
@@ -60,6 +84,33 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:lintDebug
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:assembleRelease
 ```
+
+## Research tooling
+
+```bash
+cd research
+uv sync --extra test
+uv run --frozen pytest
+```
+
+Regenerate the contract and golden vectors after an intentional contract change:
+
+```bash
+cd research
+uv run --frozen python scripts/generate_contract.py
+uv run --frozen python scripts/generate_golden_vectors.py
+```
+
+Run the full verification (Python tests, artifact drift check, Kotlin parity
+first, full Android unit tests, debug APK):
+
+```bash
+bash scripts/verify.sh
+```
+
+Capture and data rules are in `docs/spec/research-data.md`. Hardware capture and
+dataset extraction require a webcam or local dataset and are reported as
+**NOT VERIFIED** when those are unavailable.
 
 ## Install and run
 

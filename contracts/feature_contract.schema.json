@@ -1,0 +1,224 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hasta.local/contracts/feature_contract.schema.json",
+  "title": "HASTA features-v1 machine-readable contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract",
+    "version",
+    "status",
+    "language_scope",
+    "landmark_schema",
+    "coordinate_conventions",
+    "hand_slots",
+    "normalization",
+    "temporal_policy",
+    "missingness_policy",
+    "numeric_precision",
+    "feature_dim",
+    "groups"
+  ],
+  "properties": {
+    "contract": { "const": "hasta.features" },
+    "version": { "const": "features-v1" },
+    "status": { "enum": ["proposed", "locked", "deprecated"] },
+    "language_scope": {
+      "type": "array",
+      "items": { "enum": ["python", "kotlin"] },
+      "minItems": 2,
+      "uniqueItems": true
+    },
+    "landmark_schema": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "count",
+        "indices",
+        "image_coordinate_space",
+        "x_unit",
+        "y_unit",
+        "z_unit",
+        "world_coordinate_space",
+        "world_landmarks_used_by_features"
+      ],
+      "properties": {
+        "name": { "const": "mediapipe_hand_21" },
+        "count": { "const": 21 },
+        "indices": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["wrist", "thumb", "index", "middle", "ring", "pinky"],
+          "properties": {
+            "wrist": { "const": 0 },
+            "thumb": { "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4 },
+            "index": { "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4 },
+            "middle": { "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4 },
+            "ring": { "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4 },
+            "pinky": { "type": "array", "items": { "type": "integer" }, "minItems": 4, "maxItems": 4 }
+          }
+        },
+        "image_coordinate_space": { "const": "image_normalized_upright" },
+        "x_unit": { "const": "image_width_fraction" },
+        "y_unit": { "const": "image_height_fraction" },
+        "z_unit": { "const": "wrist_relative_image_x_scale" },
+        "world_coordinate_space": { "const": "metres_hand_geometric_centre" },
+        "world_landmarks_used_by_features": { "const": false }
+      }
+    },
+    "coordinate_conventions": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "feature_space",
+        "u",
+        "v",
+        "units",
+        "mirroring",
+        "rotation",
+        "display_mirror_applied"
+      ],
+      "properties": {
+        "feature_space": { "const": "image_isotropic_upright_unmirrored" },
+        "u": { "const": "x" },
+        "v": { "const": "y * (image_height / image_width)" },
+        "units": { "const": "image_width_fraction" },
+        "mirroring": { "type": "string", "minLength": 1 },
+        "rotation": { "type": "string", "minLength": 1 },
+        "display_mirror_applied": { "const": false }
+      }
+    },
+    "hand_slots": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["order", "identity", "assignment", "ambiguous_flag"],
+      "properties": {
+        "order": {
+          "type": "array",
+          "items": { "enum": ["left", "right"] },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "identity": { "const": "subject_relative_handedness" },
+        "assignment": { "type": "string", "minLength": 1 },
+        "ambiguous_flag": { "const": "header.slot_assignment_ambiguous" }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "palm_scale",
+        "palm_scale_epsilon",
+        "vector_epsilon",
+        "angle",
+        "angle_range",
+        "distance",
+        "clipping",
+        "hand_centre",
+        "orientation",
+        "extension_ratio",
+        "palm_aspect"
+      ],
+      "properties": {
+        "palm_scale": { "type": "string", "minLength": 1 },
+        "palm_scale_epsilon": { "type": "number", "exclusiveMinimum": 0 },
+        "vector_epsilon": { "type": "number", "exclusiveMinimum": 0 },
+        "angle": { "type": "string", "minLength": 1 },
+        "angle_range": {
+          "type": "array",
+          "items": { "type": "number" },
+          "minItems": 2,
+          "maxItems": 2
+        },
+        "distance": { "type": "string", "minLength": 1 },
+        "clipping": { "const": "none" },
+        "hand_centre": { "type": "string", "minLength": 1 },
+        "orientation": { "type": "string", "minLength": 1 },
+        "extension_ratio": { "type": "string", "minLength": 1 },
+        "palm_aspect": { "type": "string", "minLength": 1 }
+      }
+    },
+    "temporal_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "timestamp_unit",
+        "clock",
+        "gap_threshold_ms",
+        "derivative",
+        "acceleration",
+        "angular_wrap",
+        "irregular_intervals",
+        "non_monotonic_timestamps",
+        "first_frame"
+      ],
+      "properties": {
+        "timestamp_unit": { "const": "milliseconds" },
+        "clock": { "const": "monotonic" },
+        "gap_threshold_ms": { "type": "integer", "minimum": 1 },
+        "derivative": { "type": "string", "minLength": 1 },
+        "acceleration": { "type": "string", "minLength": 1 },
+        "angular_wrap": { "type": "string", "minLength": 1 },
+        "irregular_intervals": { "type": "string", "minLength": 1 },
+        "non_monotonic_timestamps": { "type": "string", "minLength": 1 },
+        "first_frame": { "type": "string", "minLength": 1 }
+      }
+    },
+    "missingness_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "absent_hand",
+        "invalid_landmark",
+        "imputation",
+        "nan_or_inf",
+        "zero_fill_is_valid_only_with_mask"
+      ],
+      "properties": {
+        "absent_hand": { "type": "string", "minLength": 1 },
+        "invalid_landmark": { "type": "string", "minLength": 1 },
+        "imputation": { "const": "none" },
+        "nan_or_inf": { "type": "string", "minLength": 1 },
+        "zero_fill_is_valid_only_with_mask": { "const": true }
+      }
+    },
+    "numeric_precision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["compute", "golden_storage", "device_storage", "atol", "rtol", "mask_comparison"],
+      "properties": {
+        "compute": { "const": "float64" },
+        "golden_storage": { "const": "float64" },
+        "device_storage": { "type": "string", "minLength": 1 },
+        "atol": { "type": "number", "exclusiveMinimum": 0 },
+        "rtol": { "type": "number", "exclusiveMinimum": 0 },
+        "mask_comparison": { "const": "exact" }
+      }
+    },
+    "feature_dim": { "const": 256 },
+    "groups": {
+      "type": "array",
+      "minItems": 9,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "offset", "length", "channels", "rule", "units"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[a-z][a-z0-9_.]*$" },
+          "offset": { "type": "integer", "minimum": 0 },
+          "length": { "type": "integer", "minimum": 1 },
+          "channels": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9_.]*$" }
+          },
+          "rule": { "type": "string", "minLength": 1 },
+          "units": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

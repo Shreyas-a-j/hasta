@@ -17,3 +17,10 @@ captures/
 # Benchmark pulls (raw exports stay out of version control); summaries are committed
 android/app/build/outputs/
 benchmark-pulls/
+
+# Python research environment and local data
+research/.venv/
+research/.pytest_cache/
+research/**/__pycache__/
+*.pyc
+research/data/
