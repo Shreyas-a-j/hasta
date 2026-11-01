@@ -498,6 +498,11 @@ def _kotlin_case(case: dict) -> list[str]:
     return lines
 
 
+def _kotlin_case_name(name: str) -> str:
+    safe = "".join(char if char.isalnum() else "_" for char in name)
+    return f"case_{safe}"
+
+
 def render_kotlin(document: dict | None = None) -> str:
     payload = build_document() if document is None else document
     lines = [
@@ -532,10 +537,22 @@ def render_kotlin(document: dict | None = None) -> str:
         "        val expected: List<DoubleArray>,",
         "    )",
         "",
-        "    val cases: List<Case> = listOf(",
+        "",
     ]
+    # One function per case: a single `listOf(...)` big enough to exceed the 64 KB
+    # JVM method limit fails to compile with MethodTooLargeException in <clinit>.
     for case in payload["cases"]:
-        lines.extend("        " + line for line in _kotlin_case(case))
+        body = _kotlin_case(case)
+        # The body's last line is ")," (a list element); as a function body it must
+        # not keep the trailing comma.
+        body[-1] = body[-1].rstrip(",")
+        function_name = _kotlin_case_name(case["name"])
+        lines.append(f"    private fun {function_name}(): Case = {body[0]}")
+        lines.extend("    " + line for line in body[1:])
+        lines.append("")
+    lines.append("    val cases: List<Case> = listOf(")
+    for case in payload["cases"]:
+        lines.append(f"        {_kotlin_case_name(case['name'])}(),")
     lines.extend(["    )", "}", ""])
     return "\n".join(lines)
 
