@@ -4,6 +4,9 @@
 - Auditor: automated session audit (evidence-based; every claim has a command)
 - Baseline: `HASTA_Project_Architecture_and_Product_Blueprint_v1.1.pdf`
 - Repository state audited: `a8090d6` (local `main` == `origin/main`)
+- Post-audit update: the three closure commits were pushed as `2d99cd1`; remote
+  CI run [41274799003](https://github.com/Shreyas-a-j/hasta/actions/runs/41274799003)
+  on `2d99cd1` completed **green** (`verify: PASS`), promoting G9 to **PASS**.
 
 ---
 
@@ -160,7 +163,8 @@ cd android && ./gradlew :app:testDebugUnitTest --rerun-tasks
   v5 of the Java/checkout actions answer the run's own deprecation annotations.
 - Untracked 30 generated `.pyc` files (`git rm --cached -r`, files kept on disk).
 - `docs/reports/M1_FEATURE_CONTRACT_REPORT.md`: G9 row and paragraph updated with
-  the actual remote-run evidence (run ID, failing step, fix). G9 stays PARTIAL.
+  the actual remote-run evidence (run ID, failing step, fix); with the green run
+  41274799003 it now records G9 as **PASS**.
 
 ### 2.2 Workflow readiness checklist
 
@@ -193,15 +197,17 @@ git push origin main        # exact push command (fast-forward; history untouche
   `123 passed`, `125 tests` with 0 failures, no drift, `verify: PASS`.
 - Watch with: `gh run watch` (or the Actions UI).
 
-**G9 remains PARTIAL until a real remote run completes successfully. No remote
-run has yet passed; this report does not claim GitHub Actions passed.**
+**G9 status: superseded by evidence — run
+[41274799003](https://github.com/Shreyas-a-j/hasta/actions/runs/41274799003) on
+`2d99cd1` completed green (`verify: PASS`, job success, 3 m 41 s), so G9 is now
+**PASS**. The PARTIAL statements below reflect the state before that run.
 
 ---
 
 ## 3. Remaining M1 documentation / review items
 
-1. Update the M1 report gate table to green only after the green remote run
-   (evidence: successful run URL).
+1. ~~Update the M1 report gate table to green only after the green remote run~~
+   **Done:** G9 set to PASS citing run 41274799003 on `2d99cd1`.
 2. Record the output-language metadata schema deferral (blueprint M1 item → M2)
    in an ADR or the M1 report's exclusions list.
 3. Independent review of the `.pyc` untracking + CI bump commit.
@@ -338,7 +344,9 @@ git push origin main
 gh run watch    # accept only when the 'verify' run shows 'verify: PASS'
 ```
 
-Until that remote run is green, **G9 stays PARTIAL and M1 stays open**. M2
-implementation must not begin before M2.0 closure and the M2.2/M2.3 data plan
-are in place — the current dataset (1 usable sign, 3 clips) cannot support any
-training claim.
+**Result (post-audit):** pushed as `2d99cd1`; remote run
+[41274799003](https://github.com/Shreyas-a-j/hasta/actions/runs/41274799003)
+completed **green** (`verify: PASS`, job success, 3 m 41 s). **G9 is PASS; M1 is
+closed** apart from the remaining review items in §3. M2 implementation must not
+begin before M2.0 closure and the M2.2/M2.3 data plan are in place — the current
+dataset (1 usable sign, 3 clips) cannot support any training claim.
