@@ -94,15 +94,30 @@ the full Android suite and assembles the debug APK.
 | G6 artifact regeneration | PASS | `scripts/verify.sh` drift check |
 | G7 manifest, audit, deletion | PASS | synthetic sequence/manifest tests |
 | G8 consent, licence, missingness | PASS | sequence/capture tests reject violations |
-| G9 CI configuration | PARTIAL | workflow and local script pass; no remote CI run was executed |
+| G9 CI configuration | PARTIAL | workflow and local script pass; remote run #1 on `a8090d6` failed at `android-actions/setup-android@v3` (removed upstream `tools` package), fixed by upgrading to v4; awaiting a green remote run |
 | G10 webcam recorder on hardware | PASS | `/dev/video0`, 407 frames / 14,042 ms, 0 dropped, 401 frames with hands, 802 hand observations, manifest + audit clean, reference run 407×256 |
 | G11 dataset extraction on real data | PASS | INCLUDE (Zenodo 4010759, CC BY 4.0), one clip → 56-frame sequence with full provenance; audit 3 entries, 0 errors, 0 warnings; zip and raw video deleted after extraction |
 | G12 on-device real-landmark capture | PASS | debug-only JSONL dump from the phone: 448 frames, 284 hand observations, 21 landmarks per hand; reference run 448×256, hand-less frames zero+mask |
 | G13 scope exclusions | PASS | static inspection: no recognition, LiteRT, Room, cloud or new module |
 | G14 live app feature wiring | DEFERRED | M2 scope by design; the G12 capture is debug-only (`LandmarkDumpFactory` returns null in release) and wires no features |
 
-`G9` is **PARTIAL**, not PASS: the workflow file exists and the same commands pass
-locally, but this session did not execute GitHub Actions.
+`G9` is **PARTIAL**, not PASS: the workflow and the same commands pass locally, and
+remote run #1 has now executed — but it failed before reaching the verification
+script.
+
+Remote CI evidence (2026-11-01):
+
+- Run: <https://github.com/Shreyas-a-j/hasta/actions/runs/41270050060> (`verify`,
+  run 1, push to `main` at `a8090d6`), conclusion **failure**.
+- Failed step: `android-actions/setup-android@v3` — `sdkmanager tools` exited 1
+  with `Warning: Failed to find package 'tools'`. Google removed the legacy
+  `tools` package from modern cmdline-tools, so the v3 action's default package
+  install can no longer succeed. All later steps (uv setup, `scripts/verify.sh`)
+  were skipped; the verification pipeline itself was never reached.
+- Fix applied: `android-actions/setup-android@v4` (v4.0.2 release note: "Fix for
+  removed tools package"), plus `actions/setup-java@v5` and `actions/checkout@v5`
+  per the run's own deprecation annotations.
+- `G9` stays **PARTIAL** until a fresh remote run completes with `verify: PASS`.
 
 `G14` is **DEFERRED**, not FAILED: M1 deliberately does not wire the extractor into
 the live pipeline. `G12` proves real device landmarks reach the landmarks-v1
