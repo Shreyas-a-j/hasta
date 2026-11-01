@@ -69,7 +69,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:assembleDebug
 ```
 
-Result: **115 tests, 0 failures, 0 skipped**; `:app:assembleDebug` **BUILD
+Result: **125 tests, 0 failures, 0 skipped**; `:app:assembleDebug` **BUILD
 SUCCESSFUL**. APK: `android/app/build/outputs/apk/debug/app-debug.apk` (90 MB).
 
 ### End-to-end verification script
@@ -90,18 +90,29 @@ the full Android suite and assembles the debug APK.
 | G2 Python reference | PASS | 123 Python tests |
 | G3 deterministic golden vectors | PASS | 20 cases (including extreme scale), canonical JSON, generated Kotlin source, replay tests |
 | G4 Kotlin parity | PASS | 4 feature tests, 0 failures |
-| G5 Android regression and build | PASS | 115 tests, debug APK |
+| G5 Android regression and build | PASS | 125 tests, debug APK |
 | G6 artifact regeneration | PASS | `scripts/verify.sh` drift check |
 | G7 manifest, audit, deletion | PASS | synthetic sequence/manifest tests |
 | G8 consent, licence, missingness | PASS | sequence/capture tests reject violations |
 | G9 CI configuration | PARTIAL | workflow and local script pass; no remote CI run was executed |
-| G10 webcam recorder on hardware | NOT VERIFIED | no webcam capture session was run |
-| G11 dataset extraction on real data | NOT VERIFIED | no dataset was downloaded or processed |
-| G12 live app feature wiring | NOT VERIFIED | deferred to M2 by scope |
+| G10 webcam recorder on hardware | PASS | `/dev/video0`, 407 frames / 14,042 ms, 0 dropped, 401 frames with hands, 802 hand observations, manifest + audit clean, reference run 407×256 |
+| G11 dataset extraction on real data | PASS | INCLUDE (Zenodo 4010759, CC BY 4.0), one clip → 56-frame sequence with full provenance; audit 3 entries, 0 errors, 0 warnings; zip and raw video deleted after extraction |
+| G12 on-device real-landmark capture | PASS | debug-only JSONL dump from the phone: 448 frames, 284 hand observations, 21 landmarks per hand; reference run 448×256, hand-less frames zero+mask |
 | G13 scope exclusions | PASS | static inspection: no recognition, LiteRT, Room, cloud or new module |
+| G14 live app feature wiring | DEFERRED | M2 scope by design; the G12 capture is debug-only (`LandmarkDumpFactory` returns null in release) and wires no features |
 
 `G9` is **PARTIAL**, not PASS: the workflow file exists and the same commands pass
 locally, but this session did not execute GitHub Actions.
+
+`G14` is **DEFERRED**, not FAILED: M1 deliberately does not wire the extractor into
+the live pipeline. `G12` proves real device landmarks reach the landmarks-v1
+contract through a debug-only dump; no release behaviour changed.
+
+Hardware and data evidence (2026-11-01): the webcam runs exercised both the
+missingness path (51 hand-less frames) and real motion (3,198 nonzero temporal
+values); the INCLUDE clip produced 74 hand observations from third-party footage;
+the phone capture produced 2228 nonzero temporal values with absent frames
+exactly zero+mask.
 
 ## Contract summary
 
@@ -132,8 +143,11 @@ Key rules:
 - The 600 ms gap threshold is a proposed constant, not a measured optimum.
 - Only handedness confidence is available; there is no per-hand tracking
   confidence, so the contract does not invent one.
-- The webcam and dataset paths are implemented but unexercised on real hardware or
-  data. They must not be reported as verified until run.
+- Hardware evidence comes from one webcam, one phone and one dataset clip on a
+  single developer machine. No device fleet was tested; results beyond this
+  setup are NOT VERIFIED.
+- The on-device dump (G12) covers one pipeline session and is capped at 900
+  frames per file; it is a debug tool, not a data-collection product.
 - `features-v1` is locked. Any formula, order or constant change requires
   `features-v2`, new golden vectors and an ADR.
 - The capture extra pulls MediaPipe and OpenCV; it is optional and not needed for
