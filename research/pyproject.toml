@@ -1,0 +1,28 @@
+[project]
+name = "hasta-research"
+version = "0.1.0"
+description = "HASTA M1 research tooling: features-v1, landmark extraction and dataset manifests."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "numpy==2.3.5",
+    "jsonschema==4.26.0",
+]
+
+[project.optional-dependencies]
+capture = [
+    "mediapipe==1.2.0",
+]
+test = [
+    "pytest==9.0.2",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-q"
+filterwarnings = [
+    "error::RuntimeWarning",
+]
+
+[tool.uv]
+package = false

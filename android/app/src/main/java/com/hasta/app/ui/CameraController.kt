@@ -6,6 +6,8 @@ import androidx.lifecycle.LifecycleOwner
 import com.hasta.app.data.benchmark.BenchmarkCameraInfo
 import com.hasta.app.data.benchmark.BenchmarkCounters
 import com.hasta.app.data.benchmark.BenchmarkRecorder
+import com.hasta.app.data.landmarkdump.LandmarkDump
+import com.hasta.app.data.landmarkdump.LandmarkDumpFactory
 import com.hasta.app.domain.model.HandFrame
 import com.hasta.app.domain.tracking.TrackingState
 import com.hasta.app.perception.PipelineStats
@@ -23,7 +25,8 @@ import kotlinx.coroutines.flow.update
  * - [tracking] changes only when the learner-visible tracking state changes.
  *
  * The M0 camera engine, MediaPipe configuration and benchmark path are untouched.
- * [benchmark] is null in release builds, so the debug path is unreachable there.
+ * [benchmark] and [landmarkDump] are null in release builds, so the debug paths
+ * are unreachable there.
  */
 class CameraController(
     private val context: Context,
@@ -31,6 +34,7 @@ class CameraController(
     private val previewView: PreviewView,
     val benchmark: BenchmarkRecorder? = null,
 ) {
+    private val landmarkDump: LandmarkDump? = LandmarkDumpFactory.create(context)
     private val _frameState = MutableStateFlow(FrameUiState())
     val frameState: StateFlow<FrameUiState> = _frameState.asStateFlow()
 
@@ -66,6 +70,7 @@ class CameraController(
                         latencyMs = timing.latencyMs,
                         rotationDegrees = timing.rotationDegrees,
                     )
+                    landmarkDump?.onFrame(frame)
                     publishFrame(frame)
                 }
             },
@@ -85,6 +90,7 @@ class CameraController(
 
     fun stop() {
         benchmark?.onPipelineStopped()
+        landmarkDump?.endSession()
         sessionGeneration++
         session?.stop()
         session = null

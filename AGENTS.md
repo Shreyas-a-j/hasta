@@ -6,8 +6,10 @@ The locked architecture is
 
 ## Current milestone
 
-M0 — device feasibility spike only. Hands-only tracking, CameraX, MediaPipe Hand
-Landmarker, Compose skeleton overlay, developer benchmark. Nothing else.
+M1 — `features-v1` contract and research data tooling. The M0 hands-only camera
+pipeline is frozen; M1 adds the versioned feature contract, Python reference,
+golden vectors, Kotlin parity tests, capture/extraction tooling, manifests, audit
+and deletion. Live app feature wiring is deferred to M2.
 
 Do not add sign recognition, LiteRT, GRU/CNN, vocabulary, lessons, Room,
 DataStore, authentication, cloud services, analytics, pose or face tracking.
@@ -66,4 +68,10 @@ Do not replace this with "normalized × screen size".
 cd android
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest
 JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:assembleDebug
+
+cd research
+uv sync --frozen --extra test
+uv run --frozen pytest
+
+bash scripts/verify.sh
 ```

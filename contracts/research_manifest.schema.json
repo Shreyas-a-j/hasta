@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://hasta.local/contracts/research_manifest.schema.json",
+  "title": "HASTA research manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format", "version", "created_at_utc", "feature_contract", "entries"],
+  "properties": {
+    "format": { "const": "hasta.research_manifest" },
+    "version": { "const": "research-manifest-v1" },
+    "created_at_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$"
+    },
+    "feature_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "version", "sha256"],
+      "properties": {
+        "name": { "const": "hasta.features" },
+        "version": { "const": "features-v1" },
+        "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "clip_id",
+          "path",
+          "sha256",
+          "bytes",
+          "frames",
+          "duration_ms",
+          "signer_id",
+          "label",
+          "source_kind",
+          "source_ref",
+          "consent_reference",
+          "license",
+          "license_url"
+        ],
+        "properties": {
+          "clip_id": { "type": "string", "minLength": 1 },
+          "path": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "bytes": { "type": "integer", "minimum": 1 },
+          "frames": { "type": "integer", "minimum": 1 },
+          "duration_ms": { "type": "integer", "minimum": 0 },
+          "signer_id": { "type": "string", "minLength": 1 },
+          "label": { "type": "string", "minLength": 1 },
+          "source_kind": { "enum": ["webcam", "dataset"] },
+          "source_ref": { "type": "string", "minLength": 1 },
+          "consent_reference": { "type": "string", "minLength": 1 },
+          "license": { "type": "string", "minLength": 1 },
+          "license_url": { "type": "string", "pattern": "^https?://" }
+        }
+      }
+    }
+  }
+}
