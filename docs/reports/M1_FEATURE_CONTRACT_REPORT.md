@@ -34,14 +34,15 @@ uv sync --frozen --extra test
 uv run --frozen pytest
 ```
 
-Result: **121 passed** (0 failed, 0 skipped). The suite covers:
+Result: **123 passed** (0 failed, 0 skipped). The suite covers:
 
 - contract layout, constants, schema and canonical hash;
 - coordinate aspect correction and mirroring;
 - slot assignment, continuity and ambiguity;
 - every local, global, temporal and inter-hand channel;
 - gaps, non-monotonic timestamps, missing hands and invalid landmarks;
-- golden-vector replay for all 18 cases;
+- golden-vector replay for all 20 cases, including degenerate, very small and
+  very large palm scale;
 - sequence round-trip and missingness;
 - manifest schema, provenance and contract binding;
 - audit of missing, tampered and metadata-drifted files;
@@ -56,7 +57,7 @@ JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64 ./gradlew :app:testDebugUnitTest \
   --tests 'com.hasta.app.domain.features.*'
 ```
 
-Result: **4 tests, 0 failures**. `FeatureParityTest` replays all 18 golden cases
+Result: **4 tests, 0 failures**. `FeatureParityTest` replays all 20 golden cases
 against the Kotlin implementation. Non-mask channels use `atol = 1e-6`,
 `rtol = 1e-5`; masks compare exactly.
 
@@ -86,8 +87,8 @@ the full Android suite and assembles the debug APK.
 | Gate | Result | Evidence |
 |---|---|---|
 | G1 contract and schema | PASS | `contracts/feature_contract.json`, schema, 11 contract tests |
-| G2 Python reference | PASS | 121 Python tests |
-| G3 deterministic golden vectors | PASS | 18 cases, canonical JSON, generated Kotlin source, replay tests |
+| G2 Python reference | PASS | 123 Python tests |
+| G3 deterministic golden vectors | PASS | 20 cases (including extreme scale), canonical JSON, generated Kotlin source, replay tests |
 | G4 Kotlin parity | PASS | 4 feature tests, 0 failures |
 | G5 Android regression and build | PASS | 115 tests, debug APK |
 | G6 artifact regeneration | PASS | `scripts/verify.sh` drift check |
