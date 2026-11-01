@@ -523,8 +523,9 @@ Rules:
 - Kotlin parity tests must pass before any other CI step that depends on features.
 - Cases must cover at least: first frame, steady motion, acceleration, gap,
   non-monotonic timestamp, left only, right only, both hands, absent hand,
-  invalid landmark, degenerate palm scale, mirrored input, ambiguous slots and
-  unknown handedness.
+  invalid landmark, degenerate palm scale, extreme scale (a hand just above the
+  palm-scale epsilon and a hand filling the image), mirrored input, ambiguous
+  slots and unknown handedness.
 
 ---
 

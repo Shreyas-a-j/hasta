@@ -270,6 +270,33 @@ def build_cases() -> list[dict]:
         )
     )
 
+    # Blueprint v1.1 §6.5 requires extreme-scale coverage. The smallest case keeps
+    # the palm scale just above PALM_SCALE_EPSILON (s ~ 1e-5); the largest fills the
+    # image height while every landmark stays inside x, y in [0, 1].
+    cases.append(
+        _build_case(
+            "extreme_small_scale",
+            [
+                _frame(
+                    0,
+                    [_hand("right", synthetic_points(wrist=(0.5, 0.5), scale=1e-4))],
+                )
+            ],
+        )
+    )
+
+    cases.append(
+        _build_case(
+            "extreme_large_scale",
+            [
+                _frame(
+                    0,
+                    [_hand("right", synthetic_points(wrist=(0.5, 0.95), scale=4.0))],
+                )
+            ],
+        )
+    )
+
     cases.append(
         _build_case(
             "mirrored_input",

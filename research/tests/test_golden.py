@@ -26,6 +26,8 @@ REQUIRED_CASES = {
     "absent_hand",
     "invalid_landmark",
     "degenerate_palm_scale",
+    "extreme_small_scale",
+    "extreme_large_scale",
     "mirrored_input",
     "ambiguous_slots",
     "unknown_handedness",
